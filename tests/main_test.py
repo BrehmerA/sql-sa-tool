@@ -1,7 +1,13 @@
-from main import Main
+import os
+import sys
+import unittest
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # Appends the parent dir to the python path.
+
+from main.main import Main
 
 
-class MainTest:
+class MainTest(unittest.TestCase):
     pass
 
 
