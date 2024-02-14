@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from ghapi.all import GhApi
 
 
