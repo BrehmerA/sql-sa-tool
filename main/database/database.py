@@ -1,10 +1,12 @@
+import os
 import sqlite3
+from pathlib import Path
 
 
 class Database:
     """Responsible for the DB communication."""
 
-    __FILE_NAME = 'database.db'
+    __FILE_NAME = Path(os.path.dirname(os.path.abspath(__file__))) / 'database.db'
     __CONNECTION = None
     __CURSOR = None
 
@@ -25,20 +27,23 @@ class Database:
     def __execute(self, query, arguments=None):
         """Executes a statement."""
 
-        self.__CURSOR.execute(query, arguments)
+        if arguments != None:
+            self.__CURSOR.execute(query, arguments)
+            return
+        self.__CURSOR.execute(query)
 
 
-    def fetch_one(self, query):
+    def fetch_one(self, query, arguments=None):
         """Fetches one row."""
 
-        self.__execute(query)
+        self.__execute(query, arguments)
         return self.__CURSOR.fetchone()
 
 
-    def fetch_all(self, query):
+    def fetch_all(self, query, arguments=None):
         """Fetches multiple rows."""
 
-        self.__execute(query)
+        self.__execute(query, arguments)
         return self.__CURSOR.fetchall()
 
 
