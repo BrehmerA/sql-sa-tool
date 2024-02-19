@@ -15,7 +15,7 @@ class FilterDB:
     #Class variables
     DBDriverJavaObjectFunction = ['Statement','ResultSet','PreparedStatement','TypedQuery']
     DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3"]
-    PATH_TO_TOKEN = Path(__file__).resolve().parent / '.token'
+    PATH_TO_TOKEN = Path(__file__).resolve().parent.parent / '.token'
     token = None
     api = None
 
@@ -26,7 +26,7 @@ class FilterDB:
             "python" : [],
             "java" : []
         }
-        
+
     def startFilter(self) -> dict:
         self.searchForDBConnections("python")
         #self.searchForDBConnections("java")
@@ -72,11 +72,11 @@ class FilterDB:
                 for line in fp:
                     if(re.search(searchRegex, line)):
                         return True
-        return False  
+        return False
 
     def searchLines(self, file, searchRegex):
         """Search single file for db driver"""
-       
+
 
     def createSearchRegexJava(self) -> str:
         """Define the search regex for the java DB driver"""
@@ -94,7 +94,7 @@ class FilterDB:
         drivers = drivers[:-1]
         regex = r'^(?=.*\b(import)\b)(?=.*\b('+drivers+r')\b).*$'
         return regex
-    
+
 
 if __name__ == '__main__':
     search = FilterDB()
