@@ -5,6 +5,7 @@ CREATE TABLE language(
 
 CREATE TABLE search(
     id INTEGER PRIMARY KEY,
+    date TEXT NOT NULL,
     language INTEGER NOT NULL,
     min_number_of_followers INTEGER NOT NULL,
     min_size INTEGER NOT NULL,
