@@ -18,13 +18,14 @@ class Search:
     The selection will be based on provided query arguments.
     """
 
+    DB = Database()
     PATH_TO_TOKEN = Path(__file__).resolve().parent.parent / '.token'
     LANGUAGES = ('Java', 'Python')
     MIN_NUMBER_OF_FOLLOWERS = 2
     MIN_SIZE = 100 # kB
     MIN_NUMBER_OF_STARS = 2
     NUMBER_OF_RESULTS_PER_PAGE = 100 # Max is 100.
-    DB = Database()
+    MIN_NUMBER_OF_CONTRIBUTORS = 2
     token = None
     api = None
 
@@ -38,39 +39,41 @@ class Search:
             self.token = file.read()
 
 
-    def __request_repositories(self, url):
+    def __request(self, url):
         args = shlex.split(f'''curl --include --request GET --url "{url}" --header "Accept: application/vnd.github+json" --header "Authorization: Bearer {self.token}"''')
         process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
         stdout, stderr = process.communicate()
         return stdout.decode('utf-8')
 
 
-    def __extract_content(self, output, search_id):
+    def __extract_content(self, output):
         output = output.splitlines()
         start = None
         for index in range(0, len(output)):
             line = output[index]
-            if line == '{':
+            if line == '{' or line == '[':
                 start = index
                 break
-        if start is not None:
-            output = json.loads(''.join(output[index:]))
-            for repository in output['items']:
-                repository_id = repository['id']
-                repository_name = repository['name']
-                repository_url = repository['html_url']
-                repository_number_of_followers = repository['watchers_count']
-                repository_size = repository['size']
-                repository_number_of_stars = repository['stargazers_count']
-                print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
-                # Saves the repository:
-                exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
-                if not exists:
-                    self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
-                self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
-        else:
+        if start is None:
             print("The content couldn't be extracted.")
             exit()
+        return json.loads(''.join(output[start:]))
+
+
+    def __extract_repositories(self, content, search_id):
+        for repository in content['items']:
+            repository_id = repository['id']
+            repository_name = repository['name']
+            repository_url = repository['url']
+            repository_number_of_followers = repository['watchers_count']
+            repository_size = repository['size']
+            repository_number_of_stars = repository['stargazers_count']
+            print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
+            # Saves the repository:
+            exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
+            if not exists:
+                self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
+            self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
 
 
     def __extract_next_url(self, output):
@@ -105,19 +108,34 @@ class Search:
             search_id = self.DB.fetch_one('''SELECT MAX(id) FROM search''')[0]
 
             while (url is not None):
-                output = self.__request_repositories(url)
-                self.__extract_content(output, search_id)
+                output = self.__request(url)
+                content = self.__extract_content(output)
+                self.__extract_repositories(content, search_id)
                 url = self.__extract_next_url(output)
                 sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
 
-            # TODO Filter further on minimum number of contributors. Delete repos that don't meet the critera from the DB.
 
-
-    def filter_on_number_of_contributors(self):
-        pass
+    def filter_on_min_number_of_contributors(self):
+        repositories = self.DB.fetch_all('''SELECT * FROM repository''')
+        for repository in repositories:
+            id = repository[0]
+            name = repository[1]
+            url = f'{repository[2]}/contributors?per_page={self.MIN_NUMBER_OF_CONTRIBUTORS+1}'
+            output = self.__request(url)
+            content = self.__extract_content(output)
+            message = None
+            try:
+                message = content['message']
+            except:
+                if len(content) <= self.MIN_NUMBER_OF_CONTRIBUTORS:
+                    self.DB.execute('''DELETE FROM search_repository WHERE repository = ?''', (id, ))
+                    self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
+                    print(f'Deleted the repository with id {id} and name {name} from the DB.')
+            if message is not None: print(message)
+            sleep(2) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
 
 
 if __name__ == '__main__':
     search = Search()
     search.search_repositories()
-    search.filter_on_number_of_contributors()
+    search.filter_on_min_number_of_contributors()
