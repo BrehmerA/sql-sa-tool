@@ -28,25 +28,25 @@ class FilterDB:
         }
 
     def startFilter(self) -> dict:
-        self.searchForDBConnections("python")
-        #self.searchForDBConnections("java")
+        self.__searchForDBConnections("python")
+        #self.__searchForDBConnections("java")
         return self.toAnalyse
 
-    def searchForDBConnections(self, lang):
+    def __searchForDBConnections(self, lang):
         """Search found repositories for DB operations"""
-        repos = self.getRepos(lang)
+        repos = self.__getRepos(lang)
         path = os.getcwd()
         for repo in repos:
             baseName = ntpath.basename(repo)[:-4]
             cloneInto = Path(path+'/cloned/' + baseName)
             complete = subprocess.run(["git", "clone", "--depth","1", repo , cloneInto])
-            if self.searchFiles(complete, lang):
+            if self.__searchFiles(complete, lang):
                 self.toAnalyse[lang].append(cloneInto)
             else:
                 print("DELETE")
                 # TODO: Safe delete not used repos.
 
-    def getRepos(self, lang) -> list:
+    def __getRepos(self, lang) -> list:
         """Get repos from DB after search"""
         # TODO: Collect results from DB instead of test list.
         if(lang=="python"):
@@ -56,17 +56,17 @@ class FilterDB:
         else:
             raise TypeError("Non legal language chosen for DB driver search")
 
-    def searchFiles(self,complete, lang) -> bool:
+    def __searchFiles(self,complete, lang) -> bool:
         """Search cloned repos for db drivers. Search all files in repo with lang extension stop search for separate files at first find."""
         dirPath = complete.args[5]
         extension = ""
         searchRegex = ""
         if (lang=="python"):
             extension = "*.py"
-            searchRegex = self.createSearchRegexPython()
+            searchRegex = self.__createSearchRegexPython()
         elif(lang=="java"):
             extension = "*.java"
-            searchRegex = self.createSearchRegexJava()
+            searchRegex = self.__createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
             with open(file, 'r') as fp:
                 for line in fp:
@@ -74,11 +74,7 @@ class FilterDB:
                         return True
         return False
 
-    def searchLines(self, file, searchRegex):
-        """Search single file for db driver"""
-
-
-    def createSearchRegexJava(self) -> str:
+    def __createSearchRegexJava(self) -> str:
         """Define the search regex for the java DB driver"""
         classNames = ""
         for c in self.DBDriverJavaObjectFunction:
@@ -86,7 +82,7 @@ class FilterDB:
         regex = r'^(?=.*\b('+classNames+r')\b).*$'
         return regex
 
-    def createSearchRegexPython(self) -> str:
+    def __createSearchRegexPython(self) -> str:
         """Define the search regex for the python DB drivers"""
         drivers = ""
         for driver in self.DBDriverPythonImports:
