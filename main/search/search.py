@@ -65,14 +65,15 @@ class Search:
             repository_id = repository['id']
             repository_name = repository['name']
             repository_url = repository['url']
+            repository_html_url = repository['html_url']
             repository_number_of_followers = repository['watchers_count']
             repository_size = repository['size']
             repository_number_of_stars = repository['stargazers_count']
-            print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
+            print(repository_id, repository_name, repository_url,repository_html_url, repository_number_of_followers, repository_size, repository_number_of_stars)
             # Saves the repository:
             exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
             if not exists:
-                self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
+                self.DB.execute('''INSERT INTO repository(id, name, url, html_url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_html_url, repository_number_of_followers, repository_size, repository_number_of_stars))
             self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
 
 
