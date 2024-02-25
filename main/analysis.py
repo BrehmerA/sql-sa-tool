@@ -8,4 +8,5 @@ class Analysis:
     def __init__(self):
         """The constructor..."""
 
+        # TODO CodeQL.
         pass

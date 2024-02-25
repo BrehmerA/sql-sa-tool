@@ -134,6 +134,8 @@ class Search:
             if message is not None: print(message)
             sleep(2) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
 
+        # TODO If fail or exit, save index of search.
+
 
 if __name__ == '__main__':
     search = Search()
