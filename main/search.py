@@ -1,13 +1,9 @@
 import json
-import os
 import shlex
 import subprocess
-import sys
 from datetime import date
 from pathlib import Path
 from time import sleep
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # Appends the parent dir to the python path.
 
 from database.database import Database
 
@@ -19,7 +15,7 @@ class Search:
     """
 
     DB = Database()
-    PATH_TO_TOKEN = Path(__file__).resolve().parent.parent / '.token'
+    PATH_TO_TOKEN = Path(__file__).resolve().parent / '.token'
     LANGUAGES = ('Java', 'Python')
     MIN_NUMBER_OF_FOLLOWERS = 2
     MIN_SIZE = 100 # kB
