@@ -16,10 +16,10 @@ class Main:
 
 
     def __define_search(self):
-        print('You will now be presented a number of options to define your search. The value inside the parenthesis is the default. Press Enter to select the default value, otherwise input your preferred value and press Enter.')
+        print('You will now be presented a number of options to define your search. The value inside the parentheses is the default. Press Enter to select the default value, otherwise input your preferred value and press Enter.')
 
         value = input(f'Language: ({self.language}) ')
-        if len(value) > 0:
+        if len(value) > 0: # TODO Add validation.
             self.language = value
         value = input(f'Minimum number of followers: ({self.min_number_of_followers}) ')
         if len(value) > 0:
