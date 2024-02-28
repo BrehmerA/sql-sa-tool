@@ -49,6 +49,11 @@ class Search:
         with open(self.PATH_TO_TOKEN) as file:
             self.token = file.read()
 
+        self.__search_repositories()
+        self.__filter_on_min_number_of_contributors()
+
+        self.DB.close()
+
 
     def __request(self, url):
         args = shlex.split(f'''curl --include --request GET --url "{url}" --header "Accept: application/vnd.github+json" --header "Authorization: Bearer {self.token}"''')
@@ -101,7 +106,7 @@ class Search:
         return None
 
 
-    def search_repositories(self):
+    def __search_repositories(self):
         # The requests library doesn't support pagination.
         # The API wrapper GhApi wasn't working either since it couldn't find all the repositories.
         # We therefore went with the subprocess approach, to be able to run curl commands in the terminal.
@@ -127,7 +132,7 @@ class Search:
             sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
 
 
-    def filter_on_min_number_of_contributors(self):
+    def __filter_on_min_number_of_contributors(self):
         repositories = self.DB.fetch_all('''SELECT * FROM repository''')
         for repository in repositories:
             id = repository[0]
@@ -148,9 +153,3 @@ class Search:
                     print(f'Deleted the repository with id {id} and name {name} from the DB.')
             if message is not None: print(message)
             sleep(2) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
-
-
-if __name__ == '__main__':
-    search = Search()
-    search.search_repositories()
-    search.filter_on_min_number_of_contributors()
