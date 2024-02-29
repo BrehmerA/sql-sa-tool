@@ -48,7 +48,7 @@ class Main:
         db.connect()
 
         searches = db.fetch_all('''SELECT * FROM search''')
-        print('ID\tDATE\t\tLANGUAGE\tMIN NUMBER OF FOLLOWERS\t\tMAX NUMBER OF FOLLOWERS\tMIN SIZE\tMAX SIZE\tMIN NUMBER OF STARS\tMAX NUMBER OF STARS\tMIN NUMBER OF CONTRIBUTORS\tMAX NUMBER OF FOLLOWERS')
+        print('ID\tDATE\t\tLANGUAGE\tMIN NUMBER OF FOLLOWERS\t\tMAX NUMBER OF FOLLOWERS\t\tMIN SIZE\tMAX SIZE\tMIN NUMBER OF STARS\tMAX NUMBER OF STARS\tMIN NUMBER OF CONTRIBUTORS\tMAX NUMBER OF CONTRIBUTORS')
         search_id_list = []
         for search in searches:
             search_id_list.append(search[0])
@@ -58,14 +58,24 @@ class Main:
                 sep = str()
                 match index:
                     case 2:
-                        sep = '\t\t'
+                        sep = ['\t']*2
                     case 3:
-                        sep = '\t\t\t\t'
+                        sep = ['\t']*4
                     case 4:
-                        sep = '\t\t\t\t\t'
+                        sep = ['\t']*4
+                    case 5:
+                        sep = ['\t']*2
+                    case 6:
+                        sep = ['\t']*2
+                    case 7:
+                        sep = ['\t']*3
+                    case 8:
+                        sep = ['\t']*3
+                    case 9:
+                        sep = ['\t']*4
                     case _:
                         sep = '\t'
-                string += f'{value}{sep}'
+                string += f'{value}{''.join(sep)}'
             print(string)
         search_ids = []
         while len(search_ids) == 0:
@@ -87,8 +97,8 @@ class Main:
     def run(self):
         """Main method for executing the program."""
 
-        self.__define_search()
-        Search(self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
+        # self.__define_search()
+        # Search(self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
 
         self.__select_search()
 
