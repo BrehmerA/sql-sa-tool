@@ -97,8 +97,8 @@ class Main:
     def run(self):
         """Main method for executing the program."""
 
-        # self.__define_search()
-        # Search(self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
+        self.__define_search()
+        Search(self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
 
         self.__select_search()
 
