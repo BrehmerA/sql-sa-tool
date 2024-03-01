@@ -49,6 +49,11 @@ class Search:
         with open(self.PATH_TO_TOKEN) as file:
             self.token = file.read()
 
+        self.__search_repositories()
+        self.__filter_on_min_number_of_contributors()
+
+        self.DB.close()
+
 
     def __request(self, url):
         args = shlex.split(f'''curl --include --request GET --url "{url}" --header "Accept: application/vnd.github+json" --header "Authorization: Bearer {self.token}"''')
@@ -76,15 +81,15 @@ class Search:
             repository_id = repository['id']
             repository_name = repository['name']
             repository_url = repository['url']
-            repository_html_url = repository['html_url']
+            # repository_html_url = repository['html_url']
             repository_number_of_followers = repository['watchers_count']
             repository_size = repository['size']
             repository_number_of_stars = repository['stargazers_count']
-            print(repository_id, repository_name, repository_url,repository_html_url, repository_number_of_followers, repository_size, repository_number_of_stars)
+            print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
             # Saves the repository:
             exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
             if not exists:
-                self.DB.execute('''INSERT INTO repository(id, name, url, html_url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_html_url, repository_number_of_followers, repository_size, repository_number_of_stars))
+                self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
             self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
 
 
@@ -101,7 +106,7 @@ class Search:
         return None
 
 
-    def search_repositories(self):
+    def __search_repositories(self):
         # The requests library doesn't support pagination.
         # The API wrapper GhApi wasn't working either since it couldn't find all the repositories.
         # We therefore went with the subprocess approach, to be able to run curl commands in the terminal.
@@ -113,7 +118,7 @@ class Search:
         # curl --include --request GET --url "https://api.github.com/search/repositories?q=language:Python+followers:>2+size:>100+stars:>2&s=stars&o=desc&per_page=100" --header "Accept: application/vnd.github+json"
 
         # for language in self.LANGUAGES:
-        url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{self.max_number_of_followers is not None if f'+followers:<{self.max_number_of_followers}' else ''}+size:>{self.min_size}{self.max_size is not None if f'+size:<{self.max_size}' else ''}+stars:>{self.min_number_of_stars}{self.max_number_of_stars is not None if f'+stars:<{self.max_number_of_stars}' else ''}&s=stars&o=desc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
+        url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=desc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
 
         # Saves the search.
         self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
@@ -127,7 +132,7 @@ class Search:
             sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
 
 
-    def filter_on_min_number_of_contributors(self):
+    def __filter_on_min_number_of_contributors(self):
         repositories = self.DB.fetch_all('''SELECT * FROM repository''')
         for repository in repositories:
             id = repository[0]
@@ -140,17 +145,12 @@ class Search:
                 message = content['message']
             except:
                 number_of_contributors = len(content)
-                if number_of_contributors >= self.min_number_of_contributors and number_of_contributors <= self.max_number_of_contributors:
+                if number_of_contributors >= self.min_number_of_contributors and (self.max_number_of_contributors is None or number_of_contributors <= self.max_number_of_contributors):
                     self.DB.execute('''UPDATE repository SET number_of_contributors = ? WHERE id = ?''', (number_of_contributors, id))
+                    print(f'Updated the repository with id {id} and name {name} in the DB.')
                 else:
                     self.DB.execute('''DELETE FROM search_repository WHERE repository = ?''', (id, ))
                     self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
                     print(f'Deleted the repository with id {id} and name {name} from the DB.')
             if message is not None: print(message)
             sleep(2) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
-
-
-if __name__ == '__main__':
-    search = Search()
-    search.search_repositories()
-    search.filter_on_min_number_of_contributors()
