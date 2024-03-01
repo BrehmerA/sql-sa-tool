@@ -42,6 +42,8 @@ class Main:
 
         print("You've selected the following values:", self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
 
+        # TODO Prevent the user form performing the same search, with the same query arguments, twice.
+
 
     def __select_search(self):
         db = Database()
