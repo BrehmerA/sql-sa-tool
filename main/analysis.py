@@ -21,7 +21,7 @@ class Analysis:
         """The constructor..."""
         if not os.path.exists(os.getcwd()+'/cloned'):
             os.mkdir(os.getcwd+'/cloned')
-        self.DB.connect()
+        
     
     def startFilter(self, searchID) -> dict:
         self.__searchForDBConnections("Python", searchID)
@@ -32,17 +32,17 @@ class Analysis:
         """Search found repositories for DB operations"""
         path = self.__prepareFolder(lang, searchID)
         repos = self.__getRepos(lang, searchID)
-        var = [(lang, path, rep) for rep in repos]
+        var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
         print(var)
         print("Analyserar: " + str(len(repos)) + " repos")
         
-        with Pool() as p:
+        with Pool(4) as p:
             p.starmap(runAnalysis.search, var)
 
     def __getRepos(self, lang, searchID) -> list:
         """Get repos from DB after search"""
-
-        dbResults = self.DB.fetch_all('''SELECT DISTINCT url
+        self.DB.connect()
+        dbResults = self.DB.fetch_all('''SELECT DISTINCT url, repository
                                     FROM search_repository sr
                                     LEFT JOIN repository r 
                                     ON r.id = sr.repository
@@ -53,13 +53,16 @@ class Analysis:
                                     WHERE sr.search = ?
                                     AND l.name = ?
                                     AND r.number_of_stars < ?
-                                 ''',(searchID, lang, 5700)) #Number of stars to reduce repos for testing purpose
-        urls = [url[0] for url in dbResults]
-        html_urls = []
-        for url in urls:
-            split = url.split('/')
-            html_urls.append('https://github.com/' + split[-2]+'/'+split[-1]+'.git')
-        return html_urls   
+                                 ''',(searchID, lang, 7000)) #Number of stars to reduce repos for testing purpose
+        self.DB.close()
+        repos = []
+        for url in dbResults:
+            temp = []
+            split = url[0].split('/')
+            temp.append('https://github.com/' + split[-2]+'/'+split[-1]+'.git')
+            temp.append(url[1])
+            repos.append(temp)
+        return repos 
 
     def __prepareFolder(self, lang, searchID) -> str:
         """

@@ -7,14 +7,14 @@ class Database:
     """Responsible for the DB communication."""
 
     __FILE_NAME = Path(os.path.dirname(os.path.abspath(__file__))) / 'database.db'
-    __CONNECTION = None
-    __CURSOR = None
+    #__CONNECTION = None
+    #__CURSOR = None
 
 
     def __init__(self):
         """The constructor..."""
-
-        pass
+        self.__CONNECTION = None
+        self.__CURSOR = None
 
 
     def connect(self):
@@ -53,6 +53,9 @@ class Database:
         self.__execute(query, arguments)
         self.__CONNECTION.commit()
 
+    def lastRowID(self):
+        """Return the last row for the cursor"""
+        return self.__CURSOR.lastrowid
 
     def close(self):
         """Closes the database connection."""
