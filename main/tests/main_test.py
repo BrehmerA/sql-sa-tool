@@ -12,11 +12,18 @@ from main import Main
 class MainTest(unittest.TestCase):
 
 
-    def test_validate_input(self):
+    def test_validate_input_valid_input(self):
         test = Main()
-        with patch('builtins.input', return_value='Python'), patch('sys.stdout', new=StringIO()):
-            test.language = test._Main__validate_input('Java', f'Language: ({test.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
+        with patch('builtins.input', return_value='Python'):
+            test.language = test._Main__validate_input(test.language, f'Language: ({test.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
             self.assertEqual(test.language, 'Python')
+
+
+    def test_validate_input_invalid_input(self):
+        test = Main()
+        with patch('builtins.input', return_value=str()):
+            test.language = test._Main__validate_input(test.language, f'Language: ({test.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
+            self.assertEqual(test.language, 'Java')
 
 
 if __name__ == '__main__':
