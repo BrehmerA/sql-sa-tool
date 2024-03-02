@@ -4,7 +4,7 @@ import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # Appends the parent dir to the python path.
 
-from main.database.database import Database
+from database.database import Database
 
 
 class DatabaseTest(unittest.TestCase):
