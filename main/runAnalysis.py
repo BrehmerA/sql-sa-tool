@@ -10,8 +10,8 @@ from pathlib import Path
 
 from database.database import Database
 
-DBDriverJavaObjectFunction = ['Statement','ResultSet','PreparedStatement','TypedQuery']
-DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3", "mysql.connector"] # TODO Extend.
+DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery']
+DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3", "mysql.connector", 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient'] # TODO Extend.
 codeQLDB = 'codeQLDBmap'
 
 
@@ -142,9 +142,9 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
     print(analysisResults['sqliv'])
     if analysisResults['sqliv'] is not None:
         sqliv = 1 if analysisResults["sqliv"] else 0
-        DB.execute('''INSERT INTO result(search, repository, sqliv) VALUES(?,?,?)''',(searchID, repoID, sqliv))
+        DB.execute('''INSERT INTO result(search, repository, sqliv) VALUES(?, ?, ?)''',(searchID, repoID, sqliv))
     else:
-        DB.execute('''INSERT INTO result(search, repository) VALUES(?,?)''',(searchID, repoID))
+        DB.execute('''INSERT INTO result(search, repository) VALUES(?, ?)''',(searchID, repoID))
     lastRow = DB.lastRowID()
     print(analysisResults["type"])
     if len(analysisResults["type"]) > 0:
