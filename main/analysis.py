@@ -60,13 +60,13 @@ class Analysis:
             WHERE sr.search = ?
             AND l.name = ?
             AND r.number_of_stars < ?
-            ''',(searchID, lang, 7000)) # Number of stars to reduce repos for testing purposes.
+            ''', (searchID, lang, 7000)) # Number of stars to reduce repos for testing purposes.
         self.DB.close()
         repos = []
         for url in dbResults:
             temp = []
             split = url[0].split('/')
-            temp.append('https://github.com/' + split[-2]+'/'+split[-1]+'.git')
+            temp.append('https://github.com/' + split[-2]+ '/' +split[-1] + '.git')
             temp.append(url[1])
             repos.append(temp)
         return repos
@@ -77,7 +77,7 @@ class Analysis:
 
         basePath = os.getcwd() + '/cloned'
         existingFolders = len(os.listdir(basePath))
-        path = basePath+'/'+str(searchID)+lang+str(existingFolders)
+        path = basePath + '/' + str(searchID) + lang + str(existingFolders)
         if os.path.exists(path) and not os.path.isfile(path):
             if len(os.listdir(path)) != 0:
                 for root, dirs, files in os.walk(path):

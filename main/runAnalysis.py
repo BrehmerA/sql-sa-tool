@@ -10,8 +10,8 @@ from pathlib import Path
 
 from database.database import Database
 
-DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery']
-DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3", "mysql.connector", 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient'] # TODO Extend.
+DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
+DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3", "mysql.connector", 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
 codeQLDB = 'codeQLDBmap'
 
 
@@ -26,17 +26,16 @@ def search(lang, path, repo, repoID, searchID):
         analysisResults = __performSQLIVAnalysis(cloneInto, lang)
         __saveAnalysisResults(analysisResults, repoID, searchID)
     else:
-        print("No SQL found in " + str(cloneInto))
+        print(f'No SQL found in {str(cloneInto)}.')
     try:
         for root, dirs, files in os.walk(cloneInto):
             for dir in dirs:
                 os.chmod(os.path.join(root, dir), stat.S_IRWXU)
             for file in files:
                 os.chmod(os.path.join(root, file), stat.S_IRWXU)
-
         shutil.rmtree(cloneInto)
     except Exception as e:
-        print("Problem deleting file in " + str(cloneInto))
+        print(f'Problem deleting file in {str(cloneInto)}.')
         print(e)
 
 
@@ -47,21 +46,21 @@ def __searchFiles(complete, lang) -> bool:
         extension = ""
         searchRegex = ""
         found = False
-        if (lang == "Python"):
+        if lang == "Python":
             extension = "*.py"
             searchRegex = __createSearchRegexPython()
-        elif(lang == "Java"):
+        elif lang == "Java":
             extension = "*.java"
             searchRegex = __createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
             try:
                 f=open(file)
             except FileNotFoundError:
-                print('File not found')
+                print('File not found.')
             except PermissionError:
-                print('No permission to open file')
+                print('No permission to open file.')
             except:
-                print('Unknown error')
+                print('Unknown error.')
             else:
                 with f as fp:
                     try:
@@ -95,7 +94,7 @@ def __createSearchRegexPython() -> str:
     return regex
 
 
-def __performSQLIVAnalysis(cloneInto : Path, lang: str) -> dict:
+def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     """Perform the codeQL analysis and save results to the DB."""
 
     resultDict = {
@@ -110,11 +109,11 @@ def __performSQLIVAnalysis(cloneInto : Path, lang: str) -> dict:
     newDBpath = Path.joinpath(cloneInto, Path(codeQLDB))
     output = f'--output={cloneInto}\\resCodeScanCSV.csv'
     outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
-    print("Start analysis for " + str(cloneInto))
+    print(f'Start analysis for {str(cloneInto)}.')
     completeBuild = subprocess.Popen([str(codeQLDir), "database", "create", str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
     cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
     if 'Successfully created database' in cmdBuildOutput:
-        print("Running analysis on " + str(cloneInto))
+        print(f'Running analysis on {str(cloneInto)}.')
         completeAnalysis = subprocess.run([str(codeQLDir), "database", "analyze", str(newDBpath), packs, "--format=CSV", output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         print(completeAnalysis)
         try:
