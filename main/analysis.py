@@ -39,7 +39,7 @@ class Analysis:
         repos = self.__getRepos(lang, searchID)
         var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
         print(var)
-        print("Analyzing " + str(len(repos)) + " repos.")
+        print(f'Analyzing {str(len(repos))} repos.')
 
         with Pool(4) as p:
             p.starmap(runAnalysis.search, var)
@@ -47,6 +47,7 @@ class Analysis:
 
     def __getRepos(self, lang, searchID) -> list:
         """Get repos from DB after search"""
+
         self.DB.connect()
         dbResults = self.DB.fetch_all(
             '''SELECT DISTINCT url, repository
@@ -88,7 +89,7 @@ class Analysis:
                 try:
                     shutil.rmtree(path)
                 except:
-                    print("Could not empty folder.")
+                    print('Could not empty folder.')
         else:
             os.makedirs(path)
         return path

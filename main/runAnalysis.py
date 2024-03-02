@@ -11,7 +11,7 @@ from pathlib import Path
 from database.database import Database
 
 DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
-DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3", "mysql.connector", 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
+DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
 codeQLDB = 'codeQLDBmap'
 
 
@@ -19,7 +19,7 @@ def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
     cloneInto = Path(path + '/' + baseName)
     complete = subprocess.run(
-        ["git", "clone", "--depth","1", repo , cloneInto],
+        ['git', 'clone', '--depth', '1', repo , cloneInto],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
     )
     if __searchFiles(complete, lang):
@@ -43,14 +43,14 @@ def __searchFiles(complete, lang) -> bool:
         """Search cloned repos for db drivers. Search all files in repo with lang extension stop search for repo at first find."""
 
         dirPath = complete.args[5]
-        extension = ""
-        searchRegex = ""
+        extension = ''
+        searchRegex = ''
         found = False
-        if lang == "Python":
-            extension = "*.py"
+        if lang == 'Python':
+            extension = '*.py'
             searchRegex = __createSearchRegexPython()
-        elif lang == "Java":
-            extension = "*.java"
+        elif lang == 'Java':
+            extension = '*.java'
             searchRegex = __createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
             try:
@@ -76,9 +76,9 @@ def __searchFiles(complete, lang) -> bool:
 def __createSearchRegexJava() -> str:
     """Define the search regex for the Java DB drivers."""
 
-    classNames = ""
+    classNames = ''
     for c in DBDriverJavaObjectFunction:
-        classNames = classNames + c + "|"
+        classNames = classNames + c + '|'
     regex = r'^(?=.*\b('+classNames+r')\b).*$'
     return regex
 
@@ -86,9 +86,9 @@ def __createSearchRegexJava() -> str:
 def __createSearchRegexPython() -> str:
     """Define the search regex for the Python DB drivers."""
 
-    drivers = ""
+    drivers = ''
     for driver in DBDriverPythonImports:
-        drivers = drivers + driver + "|"
+        drivers = drivers + driver + '|'
     drivers = drivers[:-1]
     regex = r'^(?=.*\b(import)\b)(?=.*\b('+drivers+r')\b).*$'
     return regex
@@ -98,8 +98,8 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     """Perform the codeQL analysis and save results to the DB."""
 
     resultDict = {
-        "sqliv" : None,
-        "type" : [],
+        'sqliv' : None,
+        'type' : [],
     }
     packs = 'python-security-extended.qls' if lang=='Python' else 'java-security-extended.qls'
     lookFor = 'SQL query built from user-controlled sources' if lang=='Python' else 'Query built by concatenation with a possibly-untrusted string'
@@ -110,11 +110,11 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     output = f'--output={cloneInto}\\resCodeScanCSV.csv'
     outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
     print(f'Start analysis for {str(cloneInto)}.')
-    completeBuild = subprocess.Popen([str(codeQLDir), "database", "create", str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
+    completeBuild = subprocess.Popen([str(codeQLDir), 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
     cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
     if 'Successfully created database' in cmdBuildOutput:
         print(f'Running analysis on {str(cloneInto)}.')
-        completeAnalysis = subprocess.run([str(codeQLDir), "database", "analyze", str(newDBpath), packs, "--format=CSV", output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        completeAnalysis = subprocess.run([str(codeQLDir), 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         print(completeAnalysis)
         try:
             with open(outputFile) as results:
@@ -122,14 +122,14 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                     for row in reader:
                         if row[0]==lookFor:
                             print(row)
-                            resultDict["type"].append((row[0], row[-5], row[-4], row[-3], row[-2], row[-1]))
-            if len(resultDict["type"]) > 0:
-                resultDict["sqliv"] = True
+                            resultDict['type'].append((row[0], row[-5], row[-4], row[-3], row[-2], row[-1]))
+            if len(resultDict['type']) > 0:
+                resultDict['sqliv'] = True
             else:
-                resultDict["sqliv"] = False
+                resultDict['sqliv'] = False
         except Exception as e:
             print(e)
-        print(resultDict["type"])
+        print(resultDict['type'])
     return resultDict
 
 
@@ -140,14 +140,14 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
     DB.connect()
     print(analysisResults['sqliv'])
     if analysisResults['sqliv'] is not None:
-        sqliv = 1 if analysisResults["sqliv"] else 0
+        sqliv = 1 if analysisResults['sqliv'] else 0
         DB.execute('''INSERT INTO result(search, repository, sqliv) VALUES(?, ?, ?)''',(searchID, repoID, sqliv))
     else:
         DB.execute('''INSERT INTO result(search, repository) VALUES(?, ?)''',(searchID, repoID))
     lastRow = DB.lastRowID()
-    print(analysisResults["type"])
-    if len(analysisResults["type"]) > 0:
-        for hit in analysisResults["type"]:
+    print(analysisResults['type'])
+    if len(analysisResults['type']) > 0:
+        for hit in analysisResults['type']:
             file = hit[0]
             location = f'{hit[1]},{hit[2]},{hit[3]},{hit[4]}'
             DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location) VALUES (?,?,?)''', (lastRow, file, location))
