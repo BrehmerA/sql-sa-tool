@@ -34,3 +34,19 @@ CREATE TABLE search_repository(
     FOREIGN KEY(search) REFERENCES search(id),
     FOREIGN KEY(repository) REFERENCES repository(id)
 );
+
+CREATE TABLE result(
+    id INTEGER PRIMARY KEY,
+    search INTEGER NOT NULL,
+    repository INTEGER NOT NULL,
+    sqliv INTEGER, -- TODO NOT NULL
+    FOREIGN KEY(search) REFERENCES search(id),
+    FOREIGN KEY(repository) REFERENCES repository(id)
+);
+
+CREATE TABLE sqliv_type(
+    result INTEGER NOT NULL,
+    file_relative_repo TEXT NOT NULL,
+    location TEXT NOT NULL,
+    FOREIGN KEY(result) REFERENCES result(id)
+);
