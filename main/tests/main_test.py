@@ -147,5 +147,20 @@ class MainTest(unittest.TestCase):
             self.assertIsNone(test.max_number_of_contributors)
 
 
+    # SEARCH IDS
+    def test_select_search_ids_valid_input(self):
+        test = Main()
+        with patch('builtins.input', return_value='1'):
+            test._Main__select_search()
+            self.assertEqual(test.search_ids, ['1'])
+
+
+    def test_select_search_ids_invalid_input(self):
+        test = Main()
+        with patch('builtins.input', side_effect=('-1', '1')):
+            test._Main__select_search()
+            self.assertEqual(test.search_ids, ['1'])
+
+
 if __name__ == '__main__':
     unittest.main()
