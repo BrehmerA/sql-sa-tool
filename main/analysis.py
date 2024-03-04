@@ -39,7 +39,7 @@ class Analysis:
         repos = self.__getRepos(lang, searchID)
         var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
         print(var)
-        print("Analyzing " + str(len(repos)) + " repos.")
+        print(f'Analyzing {str(len(repos))} repos.')
 
         with Pool(4) as p:
             p.starmap(runAnalysis.search, var)
@@ -47,6 +47,7 @@ class Analysis:
 
     def __getRepos(self, lang, searchID) -> list:
         """Get repos from DB after search"""
+
         self.DB.connect()
         dbResults = self.DB.fetch_all(
             '''SELECT DISTINCT url, repository
@@ -60,13 +61,13 @@ class Analysis:
             WHERE sr.search = ?
             AND l.name = ?
             AND r.number_of_stars < ?
-            ''',(searchID, lang, 7000)) # Number of stars to reduce repos for testing purposes.
+            ''', (searchID, lang, 7000)) # Number of stars to reduce repos for testing purposes.
         self.DB.close()
         repos = []
         for url in dbResults:
             temp = []
             split = url[0].split('/')
-            temp.append('https://github.com/' + split[-2]+'/'+split[-1]+'.git')
+            temp.append('https://github.com/' + split[-2]+ '/' +split[-1] + '.git')
             temp.append(url[1])
             repos.append(temp)
         return repos
@@ -77,7 +78,7 @@ class Analysis:
 
         basePath = os.getcwd() + '/cloned'
         existingFolders = len(os.listdir(basePath))
-        path = basePath+'/'+str(searchID)+lang+str(existingFolders)
+        path = basePath + '/' + str(searchID) + lang + str(existingFolders)
         if os.path.exists(path) and not os.path.isfile(path):
             if len(os.listdir(path)) != 0:
                 for root, dirs, files in os.walk(path):
@@ -88,7 +89,7 @@ class Analysis:
                 try:
                     shutil.rmtree(path)
                 except:
-                    print("Could not empty folder.")
+                    print('Could not empty folder.')
         else:
             os.makedirs(path)
         return path

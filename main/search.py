@@ -49,8 +49,8 @@ class Search:
         with open(self.PATH_TO_TOKEN) as file:
             self.token = file.read()
 
-        self.__search_repositories()
-        self.__filter_on_min_number_of_contributors()
+        search_id = self.__search_repositories()
+        self.__filter_on_min_number_of_contributors(search_id)
 
         self.DB.close()
 
@@ -118,10 +118,11 @@ class Search:
         # curl --include --request GET --url "https://api.github.com/search/repositories?q=language:Python+followers:>2+size:>100+stars:>2&s=stars&o=desc&per_page=100" --header "Accept: application/vnd.github+json"
 
         # for language in self.LANGUAGES:
-        url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=desc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
+        url = f"https://api.github.com/search/repositories?q=language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+        # url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
         # Saves the search.
-        self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
+        self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), 1 if self.language == 'Java' else 2, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
         search_id = self.DB.fetch_one('''SELECT MAX(id) FROM search''')[0]
 
         while (url is not None):
@@ -131,13 +132,16 @@ class Search:
             url = self.__extract_next_url(output)
             sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
 
+        return search_id
 
-    def __filter_on_min_number_of_contributors(self):
-        repositories = self.DB.fetch_all('''SELECT * FROM repository''')
-        for repository in repositories:
+
+    def __filter_on_min_number_of_contributors(self, search_id):
+        repositories = self.DB.fetch_all('''SELECT DISTINCT r.* FROM repository AS r, search_repository as sr WHERE sr.search = ?''', (search_id, ))
+        for index in range(0, len(repositories)):
+            repository = repositories[index]
             id = repository[0]
             name = repository[1]
-            url = f'{repository[2]}/contributors?per_page={self.min_number_of_contributors+1}'
+            url = f'{repository[2]}/contributors?per_page={int(self.min_number_of_contributors)+1}'
             output = self.__request(url)
             content = self.__extract_content(output)
             message = None
@@ -145,12 +149,12 @@ class Search:
                 message = content['message']
             except:
                 number_of_contributors = len(content)
-                if number_of_contributors >= self.min_number_of_contributors and (self.max_number_of_contributors is None or number_of_contributors <= self.max_number_of_contributors):
+                if number_of_contributors >= int(self.min_number_of_contributors) and (self.max_number_of_contributors is None or number_of_contributors <= int(self.max_number_of_contributors)):
                     self.DB.execute('''UPDATE repository SET number_of_contributors = ? WHERE id = ?''', (number_of_contributors, id))
-                    print(f'Updated the repository with id {id} and name {name} in the DB.')
+                    print(f'{index}: Updated the repository with id {id} and name {name} in the DB.')
                 else:
                     self.DB.execute('''DELETE FROM search_repository WHERE repository = ?''', (id, ))
                     self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
-                    print(f'Deleted the repository with id {id} and name {name} from the DB.')
+                    print(f'{index}: Deleted the repository with id {id} and name {name} from the DB.')
             if message is not None: print(message)
-            sleep(2) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
+            sleep(0.5) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
