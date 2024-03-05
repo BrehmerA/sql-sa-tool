@@ -1,7 +1,7 @@
 import json
 import shlex
 import subprocess
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from time import sleep
 
@@ -63,17 +63,23 @@ class Search:
 
 
     def __extract_content(self, output):
-        output = output.splitlines()
+        lines = output.splitlines()
         start = None
-        for index in range(0, len(output)):
-            line = output[index]
+        for index in range(0, len(lines)):
+            line = lines[index]
             if line == '{' or line == '[':
                 start = index
                 break
         if start is None:
-            print("The content couldn't be extracted.")
+            rate_limit = output.split('x-ratelimit-remaining: ')[1]
+            rate_limit = ''.join(c for c in rate_limit if ord(c)>31 and ord(c)<126) # Removes tabs and new lines.
+            rate_limit = rate_limit.split('x-ratelimit-reset: ')
+            if int(rate_limit[0]) == 0:
+                rate_limit = rate_limit[1].split('x-ratelimit-used: ')[0]
+                print(f"You've exceeded the rate limit. Wait until {datetime.fromtimestamp(int(rate_limit))} til you try again.")
+            else: print("The content couldn't be extracted.")
             exit()
-        return json.loads(''.join(output[start:]))
+        return json.loads(''.join(lines[start:]))
 
 
     def __extract_repositories(self, content, search_id):
@@ -90,6 +96,8 @@ class Search:
             exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
             if not exists:
                 self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
+            else:
+                self.DB.execute('''UPDATE repository SET number_of_followers = ?, size = ?, number_of_stars = ? WHERE id = ?''', (repository_id, repository_number_of_followers, repository_size, repository_number_of_stars))
             self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
 
 
