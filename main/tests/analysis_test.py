@@ -8,8 +8,17 @@ from analysis import Analysis
 
 
 class AnalysisTest(unittest.TestCase):
-    pass
+    
+    def test_init(self):
+        analyse = Analysis()
+        self.assertIsNotNone(analyse.DB._Database__CONNECTION)
+        self.assertIsNotNone(analyse.DB._Database__CURSOR)
+        self.assertTrue(os.path.exists(os.getcwd() + '/cloned'))
 
+    def test_getRepos(self):
+        analyse = Analysis()
+        repos = analyse.__getRepos('Python', 999)
+        self.assertEqual(repos, [])
 
 if __name__ == '__main__':
-    pass
+    unittest.main()
