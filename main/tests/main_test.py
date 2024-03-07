@@ -147,15 +147,46 @@ class MainTest(unittest.TestCase):
             self.assertIsNone(test.max_number_of_contributors)
 
 
+    # DEFINE SEARCH
+    def test_define_search_valid_input(self):
+        test = Main()
+        with patch('builtins.input', side_effect=('Python', '1', '3', '1', '3', '1', '3', '1', '3')):
+            test._Main__define_search()
+            self.assertEqual(test.language, 'Python')
+            self.assertEqual(test.min_number_of_followers, '1')
+            self.assertEqual(test.max_number_of_followers, '3')
+            self.assertEqual(test.min_size, '1')
+            self.assertEqual(test.max_size, '3')
+            self.assertEqual(test.min_number_of_stars, '1')
+            self.assertEqual(test.max_number_of_stars, '3')
+            self.assertEqual(test.min_number_of_contributors, '1')
+            self.assertEqual(test.max_number_of_contributors, '3')
+
+
+    def test_define_search_invalid_input(self):
+        test = Main()
+        with patch('builtins.input', side_effect=(str(), '-1', str(), '1', str(), '-1', str(), '1', str(), '-1', str(), '1', str(), '-1', str(), '1', str())):
+            test._Main__define_search()
+            self.assertEqual(test.language, 'Java')
+            self.assertEqual(test.min_number_of_followers, 2)
+            self.assertIsNone(test.max_number_of_followers)
+            self.assertEqual(test.min_size, 100)
+            self.assertIsNone(test.max_size)
+            self.assertEqual(test.min_number_of_stars, 2)
+            self.assertIsNone(test.max_number_of_stars)
+            self.assertEqual(test.min_number_of_contributors, 2)
+            self.assertIsNone(test.max_number_of_contributors)
+
+
     # SEARCH IDS
-    def test_select_search_ids_valid_input(self):
+    def test_select_search_valid_input(self):
         test = Main()
         with patch('builtins.input', return_value='1'):
             test._Main__select_search()
             self.assertEqual(test.search_ids, ['1'])
 
 
-    def test_select_search_ids_invalid_input(self):
+    def test_select_search_invalid_input(self):
         test = Main()
         with patch('builtins.input', side_effect=('-1', '1')):
             test._Main__select_search()

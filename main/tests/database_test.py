@@ -15,6 +15,7 @@ class DatabaseTest(unittest.TestCase):
         db.connect()
         self.assertIsNotNone(db._Database__CONNECTION)
         self.assertIsNotNone(db._Database__CURSOR)
+        db.close()
 
 
     def test_close(self):

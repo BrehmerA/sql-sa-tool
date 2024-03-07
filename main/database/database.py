@@ -11,12 +11,6 @@ class Database:
     __CURSOR = None
 
 
-    def __init__(self):
-        """The constructor..."""
-        self.__CONNECTION = None
-        self.__CURSOR = None
-
-
     def connect(self):
         """Connects to the database."""
 
