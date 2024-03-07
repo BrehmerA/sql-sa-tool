@@ -29,7 +29,7 @@ class Analysis:
 
     def startFilter(self, searchID) -> dict:
         self.__searchForDBConnections("Python", searchID)
-        #self.__searchForDBConnections("Java", searchID)
+        self.__searchForDBConnections("Java", searchID)
 
 
     def __searchForDBConnections(self, lang, searchID):
@@ -60,9 +60,7 @@ class Analysis:
             ON s.language = l.id
             WHERE sr.search = ?
             AND l.name = ?
-            AND r.number_of_stars < ?
-            ''', (searchID, lang, 7000)) # Number of stars to reduce repos for testing purposes.
-        self.DB.close()
+            ''', (searchID, lang))
         repos = []
         for url in dbResults:
             temp = []
