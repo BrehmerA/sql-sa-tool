@@ -110,11 +110,11 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     output = f'--output={cloneInto}\\resCodeScanCSV.csv'
     outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
     print(f'Start analysis for {str(cloneInto)}.')
-    completeBuild = subprocess.Popen([str(codeQLDir), 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
+    completeBuild = subprocess.Popen(['codeql', 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
     cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
     if 'Successfully created database' in cmdBuildOutput:
         print(f'Running analysis on {str(cloneInto)}.')
-        completeAnalysis = subprocess.run([str(codeQLDir), 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        completeAnalysis = subprocess.run(['codeql', 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         print(completeAnalysis)
         try:
             with open(outputFile) as results:
@@ -138,14 +138,14 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
 
     DB = Database()
     DB.connect()
-    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers from repository WHERE id=?''',(repoID,))
+    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''',(repoID,))
     print(repoQuery)
     print(analysisResults['sqliv'])
     if analysisResults['sqliv'] is not None:
         sqliv = 1 if analysisResults['sqliv'] else 0
-        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers) VALUES(?, ?, ?, ?, ?, ?)''',(searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2]))
+        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?, ?)''',(searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
     else:
-        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers) VALUES(?, ?, ?, ?, ?)''',(searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2]))
+        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?)''',(searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
     lastRow = DB.lastRowID()
     print(analysisResults['type'])
     if len(analysisResults['type']) > 0:
