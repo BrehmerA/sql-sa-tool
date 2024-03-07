@@ -39,7 +39,11 @@ CREATE TABLE result(
     id INTEGER PRIMARY KEY,
     search INTEGER NOT NULL,
     repository INTEGER NOT NULL,
-    sqliv INTEGER, -- TODO NOT NULL
+    sqliv INTEGER, -- TODO NOT NULL,
+    number_of_followers INTEGER NOT NULL,
+    size INTEGER NOT NULL,
+    number_of_stars INTEGER NOT NULL,
+    number_of_contributors INTEGER
     FOREIGN KEY(search) REFERENCES search(id),
     FOREIGN KEY(repository) REFERENCES repository(id)
 );
