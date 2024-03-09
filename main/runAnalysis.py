@@ -1,56 +1,67 @@
+import csv
 import ntpath
 import os
 import re
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
-DBDriverJavaObjectFunction = ['Statement','ResultSet','PreparedStatement','TypedQuery']
-DBDriverPythonImports = ["pymssql", "asyncpg", "pyodbc", "sqlite3"]
+from database.database import Database
+
+DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
+DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
+codeQLDB = 'codeQLDBmap'
 
 
-def search(lang, path, repo):
+def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
     cloneInto = Path(path + '/' + baseName)
-    complete = subprocess.run(["git", "clone", "--depth","1", repo , cloneInto],
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.STDOUT)
+    complete = subprocess.run(
+        ['git', 'clone', '--depth', '1', repo , cloneInto],
+        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+    )
     if __searchFiles(complete, lang):
-        __performSQLIVAnalysis(cloneInto)
-
-    for root, dirs, files in os.walk(cloneInto):
-        for dir in dirs:
-            os.chmod(os.path.join(root, dir), stat.S_IRWXU)
-        for file in files:
-            os.chmod(os.path.join(root, file), stat.S_IRWXU)
+        analysisResults = __performSQLIVAnalysis(cloneInto, lang)
+        __saveAnalysisResults(analysisResults, repoID, searchID)
+    else:
+        print(f'No SQL found in {str(cloneInto)}.')
     try:
+        for root, dirs, files in os.walk(cloneInto):
+            for dir in dirs:
+                os.chmod(os.path.join(root, dir), stat.S_IRWXU)
+            for file in files:
+                os.chmod(os.path.join(root, file), stat.S_IRWXU)
         shutil.rmtree(cloneInto)
-    except:
-        print("Problem deleting file in ")
+    except Exception as e:
+        print(f'Problem deleting file in {str(cloneInto)}.')
+        print(e)
+
 
 
 def __searchFiles(complete, lang) -> bool:
         """Search cloned repos for db drivers. Search all files in repo with lang extension stop search for repo at first find."""
+
         dirPath = complete.args[5]
-        extension = ""
-        searchRegex = ""
+        extension = ''
+        searchRegex = ''
         found = False
-        if (lang=="Python"):
-            extension = "*.py"
+        if lang == 'Python':
+            extension = '*.py'
             searchRegex = __createSearchRegexPython()
-        elif(lang=="Java"):
-            extension = "*.java"
+        elif lang == 'Java':
+            extension = '*.java'
             searchRegex = __createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
             try:
                 f=open(file)
             except FileNotFoundError:
-                print('File not found')
+                print('File not found.')
             except PermissionError:
-                print('No permission to open file')
+                print('No permission to open file.')
             except:
-                print('Unknown error')
+                print('Unknown error.')
             else:
                 with f as fp:
                     try:
@@ -59,28 +70,93 @@ def __searchFiles(complete, lang) -> bool:
                                 found = True
                                 return found
                     except Exception as e:
-                        print("Could not read file")
+                        pass
         return found
 
 
 def __createSearchRegexJava() -> str:
-    """Define the search regex for the java DB driver"""
-    classNames = ""
+    """Define the search regex for the Java DB drivers."""
+
+    classNames = ''
     for c in DBDriverJavaObjectFunction:
-        classNames = classNames + c + "|"
+        classNames = classNames + c + '|'
     regex = r'^(?=.*\b('+classNames+r')\b).*$'
     return regex
 
 
 def __createSearchRegexPython() -> str:
-    """Define the search regex for the python DB drivers"""
-    drivers = ""
+    """Define the search regex for the Python DB drivers."""
+
+    drivers = ''
     for driver in DBDriverPythonImports:
-        drivers = drivers + driver + "|"
+        drivers = drivers + driver + '|'
     drivers = drivers[:-1]
     regex = r'^(?=.*\b(import)\b)(?=.*\b('+drivers+r')\b).*$'
     return regex
 
 
-def __performSQLIVAnalysis(cloneInto):
-    print("Performing SQLIV analysis on: " + str(cloneInto))
+def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
+    """Perform the codeQL analysis and save results to the DB."""
+
+    resultDict = {
+        'sqliv' : None,
+        'type' : [],
+    }
+    packs = 'python-security-extended.qls' if lang=='Python' else 'java-security-extended.qls'
+    lookFor = 'SQL query built from user-controlled sources' if lang=='Python' else 'Query built by concatenation with a possibly-untrusted string'
+    codeQLDir = Path(os.path.abspath(__file__)).parent.parent.joinpath('codeql/codeql').absolute()
+    language = f'--language={str(lang).lower()}'
+    source = f'--source-root={cloneInto}'
+    newDBpath = Path.joinpath(cloneInto, Path(codeQLDB))
+    output = f'--output={cloneInto}\\resCodeScanCSV.csv'
+    outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
+    print(f'Start analysis for {str(cloneInto)}.')
+    completeBuild = subprocess.Popen(['codeql', 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
+    cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
+    if 'Successfully created database' in cmdBuildOutput:
+        print(f'Running analysis on {str(cloneInto)}.')
+        completeAnalysis = subprocess.run(['codeql', 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        print(completeAnalysis)
+        try:
+            with open(outputFile) as results:
+                    reader = csv.reader(results, delimiter=',')
+                    for row in reader:
+                        if row[0]==lookFor:
+                            print(row)
+                            resultDict['type'].append((row[0], row[-5], row[-4], row[-3], row[-2], row[-1]))
+            if len(resultDict['type']) > 0:
+                resultDict['sqliv'] = 1
+            else:
+                resultDict['sqliv'] = 0
+        except Exception as e:
+            print(e)
+        print(resultDict['type'])
+    return resultDict
+
+
+def __saveAnalysisResults(analysisResults, repoID, searchID):
+    """Save the analysis result to database."""
+
+    DB = Database()
+    DB.connect()
+    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''',(repoID,))
+    print(repoQuery)
+    print(analysisResults['sqliv'])
+    if analysisResults['sqliv'] is not None:
+        sqliv = 1 if analysisResults['sqliv'] else 0
+        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?, ?)''',(searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+    else:
+        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?)''',(searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+    lastRow = DB.lastRowID()
+    print(analysisResults['type'])
+    if len(analysisResults['type']) > 0:
+        for hit in analysisResults['type']:
+            file = hit[0]
+            location = f'{hit[1]},{hit[2]},{hit[3]},{hit[4]}'
+            DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location) VALUES (?,?,?)''', (lastRow, file, location))
+    DB.commit()
+    DB.close()
+
+
+if __name__ == '__main__':
+    pass
