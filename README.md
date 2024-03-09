@@ -10,11 +10,10 @@ Installation of git with git as system path.
 
 Installation of codeQL CLI with the requirement of setting codeQL as system path.  
 * Installation instructions [here](https://docs.github.com/en/code-security/codeql-cli/getting-started-with-the-codeql-cli/setting-up-the-codeql-cli)  
-
 * The application is currently only tested with codeQL CLI version 2.16.3.
 
 </br>
 
-A GitHub personal access token is required since the tool makes authenticated calls to the GitHub API. <span style="color:orange">Warning! Treat your access tokens like passwords.</span>  
-* To create a personal access token follow instructions on github [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)  
+A GitHub personal access token is required since the tool makes authenticated calls to the GitHub API. <span style="color:orange">Warning! Treat your access tokens like passwords.</span>    
+* To create a personal access token follow instructions on github [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)    
 * Create a file called .token in the main folder and paste your GitHub Personal Access Token there. This file will be ignored by Git for security reasons.
