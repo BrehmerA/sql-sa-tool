@@ -138,15 +138,15 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
 
     DB = Database()
     DB.connect()
-    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''',(repoID,))
+    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''', (repoID,))
     print(repoQuery)
     print(analysisResults['sqliv'])
     if analysisResults['sqliv'] is not None:
         sqliv = 1 if analysisResults['sqliv'] else 0
-        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?, ?)''',(searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?)''', (searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
     else:
-        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers, number_of_contributors) VALUES(?, ?, ?, ?, ?)''',(searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
-    lastRow = DB.lastRowID()
+        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?)''', (searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+    lastRow = DB.last_row_id()
     print(analysisResults['type'])
     if len(analysisResults['type']) > 0:
         for hit in analysisResults['type']:
