@@ -1,7 +1,7 @@
 import json
 import shlex
 import subprocess
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from time import sleep
 
@@ -44,15 +44,8 @@ class Search:
         self.min_number_of_contributors = min_number_of_contributors
         self.max_number_of_contributors = max_number_of_contributors
 
-        self.DB.connect()
-
         with open(self.PATH_TO_TOKEN) as file:
             self.token = file.read()
-
-        search_id = self.__search_repositories()
-        self.__filter_on_min_number_of_contributors(search_id)
-
-        self.DB.close()
 
 
     def __request(self, url):
@@ -62,18 +55,31 @@ class Search:
         return stdout.decode('utf-8')
 
 
+    def __remove_tabs_and_new_lines(self, string):
+        """Removes tabs and new lines from a string."""
+
+        return ''.join(character for character in string if ord(character) >= 32 and ord(character) <= 122)
+
+
     def __extract_content(self, output):
-        output = output.splitlines()
+        lines = output.splitlines()
         start = None
-        for index in range(0, len(output)):
-            line = output[index]
+        for index in range(0, len(lines)):
+            line = lines[index]
             if line == '{' or line == '[':
                 start = index
                 break
         if start is None:
-            print("The content couldn't be extracted.")
+            rate_limit = output.split('x-ratelimit-remaining: ')[1]
+            rate_limit = self.__remove_tabs_and_new_lines(rate_limit)
+            rate_limit = rate_limit.split('x-ratelimit-reset: ')
+            if int(rate_limit[0]) == 0:
+                rate_limit = rate_limit[1].split('x-ratelimit-used: ')[0]
+                print(f"You've exceeded the rate limit. Wait until {datetime.fromtimestamp(int(rate_limit))} til you try again.")
+            else: print("The content couldn't be extracted.")
+            # self.DB.close()
             exit()
-        return json.loads(''.join(output[start:]))
+        return json.loads(''.join(lines[start:]))
 
 
     def __extract_repositories(self, content, search_id):
@@ -87,10 +93,15 @@ class Search:
             repository_number_of_stars = repository['stargazers_count']
             print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
             # Saves the repository:
-            exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, )) != None
+            self.DB.connect()
+            exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, ))
+            exists = False if exists is None else exists[0] == repository_id
             if not exists:
                 self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
+            else:
+                self.DB.execute('''UPDATE repository SET number_of_followers = ?, size = ?, number_of_stars = ? WHERE id = ?''', (repository_id, repository_number_of_followers, repository_size, repository_number_of_stars))
             self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
+            self.DB.close()
 
 
     def __extract_next_url(self, output):
@@ -101,7 +112,7 @@ class Search:
             link = link.split('>; rel="') # Separates the url and the value.
             url = link[0][1:] # Removes the initial <.
             value = link[1].replace('"', '') # Removes the ending ".
-            value = ''.join(c for c in value if ord(c)>31 and ord(c)<126) # Removes tabs and new lines.
+            value = self.__remove_tabs_and_new_lines(value)
             if value == 'next': return url
         return None
 
@@ -122,8 +133,10 @@ class Search:
         # url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
         # Saves the search.
+        self.DB.connect()
         self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), 1 if self.language == 'Java' else 2, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
         search_id = self.DB.fetch_one('''SELECT MAX(id) FROM search''')[0]
+        self.DB.close()
 
         while (url is not None):
             output = self.__request(url)
@@ -136,6 +149,7 @@ class Search:
 
 
     def __filter_on_min_number_of_contributors(self, search_id):
+        self.DB.connect()
         repositories = self.DB.fetch_all('''SELECT DISTINCT r.* FROM repository AS r, search_repository as sr WHERE sr.search = ?''', (search_id, ))
         for index in range(0, len(repositories)):
             repository = repositories[index]
@@ -157,4 +171,10 @@ class Search:
                     self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
                     print(f'{index}: Deleted the repository with id {id} and name {name} from the DB.')
             if message is not None: print(message)
-            sleep(0.5) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
+            sleep(0.25) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
+        self.DB.close()
+
+
+    def run(self):
+        search_id = self.__search_repositories()
+        self.__filter_on_min_number_of_contributors(search_id)

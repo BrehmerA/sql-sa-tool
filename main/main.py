@@ -15,6 +15,8 @@ class Main:
     min_number_of_contributors = 2
     max_number_of_contributors = None
 
+    search_ids = []
+
 
     def __validate_input(self, original, message, boolean, error_message):
         while True:
@@ -79,8 +81,7 @@ class Main:
                         sep = '\t'
                 string += f'{value}{''.join(sep)}'
             print(string)
-        search_ids = []
-        while len(search_ids) == 0:
+        while len(self.search_ids) == 0:
             ids = input('Please enter the IDs of the searches you want to be presented (use a single space as a separator): ').split(' ')
             ok = True
             for id in ids:
@@ -88,10 +89,10 @@ class Main:
                     ok = False
                     break
             if ok:
-                search_ids = ids
+                self.search_ids = ids
             else:
                 print('Not a valid input. Please try again.')
-        print(f"You've selected the following {'IDs' if len(search_ids) > 1 else 'ID'}:", *search_ids, sep=' ')
+        print(f"You've selected the following {'IDs' if len(self.search_ids) > 1 else 'ID'}:", *self.search_ids, sep=' ')
 
         db.close()
 
@@ -100,7 +101,13 @@ class Main:
         """Main method for executing the program."""
 
         self.__define_search()
-        Search(self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
+        Search(
+            self.language,
+            self.min_number_of_followers, self.max_number_of_followers,
+            self.min_size, self.max_size,
+            self.min_number_of_stars, self.max_number_of_stars,
+            self.min_number_of_contributors, self.max_number_of_contributors,
+        ).run()
 
         self.__select_search()
 
