@@ -20,6 +20,18 @@ class Main:
     search_ids = []
 
 
+    def __select_action(self):
+        print('What do you wish to do?\n1. Perform a new search\n2. Present the results from a previous search')
+        while True:
+            try:
+                answer = int(input('Please enter the number of the action: '))
+                if answer == 1 or answer == 2: break
+                raise Exception
+            except:
+                print('Not a valid input. Please try again.')
+        return answer
+
+
     def __validate_input(self, original, message, boolean, error_message):
         while True:
             value = input(message)
@@ -102,18 +114,18 @@ class Main:
     def run(self):
         """Main method for executing the program."""
 
-        # TODO Let the user choose if they want to perform a new search or if they just want to show the results from a previous search.
+        answer = self.__select_action()
+        if answer == 1:
+            self.__define_search()
+            search_id = Search(
+                self.language,
+                self.min_number_of_followers, self.max_number_of_followers,
+                self.min_size, self.max_size,
+                self.min_number_of_stars, self.max_number_of_stars,
+                self.min_number_of_contributors, self.max_number_of_contributors,
+            ).run()
 
-        self.__define_search()
-        search_id = Search(
-            self.language,
-            self.min_number_of_followers, self.max_number_of_followers,
-            self.min_size, self.max_size,
-            self.min_number_of_stars, self.max_number_of_stars,
-            self.min_number_of_contributors, self.max_number_of_contributors,
-        ).run()
-
-        Analysis().startFilter(search_id)
+            Analysis().startFilter(search_id)
 
         self.__select_search()
         results = Results(self.search_ids)
