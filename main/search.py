@@ -171,7 +171,7 @@ class Search:
                     self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
                     print(f'{index}: Deleted the repository with id {id} and name {name} from the DB.')
             if message is not None: print(message)
-            sleep(0.25) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
+            sleep(0.1) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
         self.DB.close()
 
 

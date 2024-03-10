@@ -113,10 +113,9 @@ class Main:
             self.min_number_of_contributors, self.max_number_of_contributors,
         ).run()
 
-        self.__select_search()
-
         Analysis().startFilter(search_id)
 
+        self.__select_search()
         results = Results(self.search_ids)
         results.print_to_screen()
         results.write_to_file()
