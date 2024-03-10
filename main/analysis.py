@@ -20,11 +20,8 @@ class Analysis:
 
     def __init__(self):
         """The constructor..."""
-
-        self.DB.connect()
-
         if not os.path.exists(os.getcwd() + '/cloned'):
-            os.mkdir(os.getcwd + '/cloned')
+            os.mkdir(os.getcwd() + '/cloned')
 
 
     def startFilter(self, searchID) -> dict:
@@ -38,7 +35,6 @@ class Analysis:
         path = self.__prepareFolder(lang, searchID)
         repos = self.__getRepos(lang, searchID)
         var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
-        print(var)
         print(f'Analyzing {str(len(repos))} repos.')
 
         with Pool(4) as p:
@@ -68,6 +64,7 @@ class Analysis:
             temp.append('https://github.com/' + split[-2]+ '/' +split[-1] + '.git')
             temp.append(url[1])
             repos.append(temp)
+        self.DB.close()
         return repos
 
 
@@ -91,3 +88,7 @@ class Analysis:
         else:
             os.makedirs(path)
         return path
+
+if __name__=='__main__':
+    a = Analysis()
+    a.startFilter(6)

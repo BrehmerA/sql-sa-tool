@@ -26,7 +26,7 @@ def search(lang, path, repo, repoID, searchID):
         analysisResults = __performSQLIVAnalysis(cloneInto, lang)
         __saveAnalysisResults(analysisResults, repoID, searchID)
     else:
-        print(f'No SQL found in {str(cloneInto)}.')
+        print(f'No SQL connection found in {str(cloneInto)}.')
     try:
         for root, dirs, files in os.walk(cloneInto):
             for dir in dirs:
@@ -103,25 +103,23 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     }
     packs = 'python-security-extended.qls' if lang=='Python' else 'java-security-extended.qls'
     lookFor = 'SQL query built from user-controlled sources' if lang=='Python' else 'Query built by concatenation with a possibly-untrusted string'
-    codeQLDir = Path(os.path.abspath(__file__)).parent.parent.joinpath('codeql/codeql').absolute()
     language = f'--language={str(lang).lower()}'
     source = f'--source-root={cloneInto}'
     newDBpath = Path.joinpath(cloneInto, Path(codeQLDB))
     output = f'--output={cloneInto}\\resCodeScanCSV.csv'
     outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
-    print(f'Start analysis for {str(cloneInto)}.')
+    print(f'Preparing analysis for {str(cloneInto)}.')
     completeBuild = subprocess.Popen(['codeql', 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
     cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
     if 'Successfully created database' in cmdBuildOutput:
         print(f'Running analysis on {str(cloneInto)}.')
         completeAnalysis = subprocess.run(['codeql', 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        print(completeAnalysis)
+        print(f'Analysis for {str(cloneInto)} completed')
         try:
             with open(outputFile) as results:
                     reader = csv.reader(results, delimiter=',')
                     for row in reader:
                         if row[0]==lookFor:
-                            print(row)
                             resultDict['type'].append((row[0], row[-5], row[-4], row[-3], row[-2], row[-1]))
             if len(resultDict['type']) > 0:
                 resultDict['sqliv'] = 1
@@ -129,7 +127,6 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                 resultDict['sqliv'] = 0
         except Exception as e:
             print(e)
-        print(resultDict['type'])
     return resultDict
 
 
@@ -139,8 +136,6 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
     DB = Database()
     DB.connect()
     repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''', (repoID,))
-    print(repoQuery)
-    print(analysisResults['sqliv'])
     if analysisResults['sqliv'] is not None:
         sqliv = 1 if analysisResults['sqliv'] else 0
         DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?)''', (searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
@@ -153,7 +148,6 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
             file = hit[0]
             location = f'{hit[1]},{hit[2]},{hit[3]},{hit[4]}'
             DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location) VALUES (?,?,?)''', (lastRow, file, location))
-    DB.commit()
     DB.close()
 
 
