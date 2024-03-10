@@ -178,3 +178,4 @@ class Search:
     def run(self):
         search_id = self.__search_repositories()
         self.__filter_on_min_number_of_contributors(search_id)
+        return search_id

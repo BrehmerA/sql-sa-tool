@@ -91,8 +91,3 @@ class Analysis:
         else:
             os.makedirs(path)
         return path
-
-
-if __name__ == '__main__':
-    a = Analysis()
-    a.startFilter(1)
