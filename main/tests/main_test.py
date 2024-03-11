@@ -12,6 +12,21 @@ from main import Main
 class MainTest(unittest.TestCase):
 
 
+    # SELECT ACTION
+    def test_select_action_valid_input(self):
+        test = Main()
+        with patch('builtins.input', return_value='1'):
+            answer = test._Main__select_action()
+            self.assertEqual(answer, 1)
+
+
+    def test_select_action_invalid_input(self):
+        test = Main()
+        with patch('builtins.input', side_effect=('-1', '1')):
+            answer = test._Main__select_action()
+            self.assertEqual(answer, 1)
+
+
     # LANGUAGE
     def test_select_language_valid_input(self):
         test = Main()
@@ -178,7 +193,7 @@ class MainTest(unittest.TestCase):
             self.assertIsNone(test.max_number_of_contributors)
 
 
-    # SEARCH IDS
+    # SELECT SEARCH
     def test_select_search_valid_input(self):
         test = Main()
         with patch('builtins.input', return_value='1'):
