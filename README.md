@@ -5,14 +5,22 @@ This software is created for the purpose of analyzing open-source project on Git
 
 ### search parameters
 The tool let the user define parameters to use during the search. The parameters are presented below with defaults and possible values.  
-*  Language: Java or Pyhton with Java as default.  
+*  Language: Java or Pyhton with Java as default.
+
 *  min number of followers: positive int, default 2
+
 *  max number of followers: positive int, default no max value
+
 *  min size: positive int, default 100b
+
 *  max size: positive int, default no max value
+
 *  min number of stars: positive int, default 2
+
 *  max number of stars: positive int, default no max value
+
 *  min number of contributors: positive int, default 2 
+
 *  max number of contributors: positive int, default no max value
 
 ## Requirements
