@@ -7,8 +7,11 @@ class Database:
     """Responsible for the DB communication."""
 
     __FILE_NAME = Path(os.path.dirname(os.path.abspath(__file__))) / 'database.db'
-    __CONNECTION = None
-    __CURSOR = None
+
+    def __init__(self):
+        """Init function"""
+        self.__CONNECTION = None
+        self.__CURSOR = None
 
 
     def connect(self):
