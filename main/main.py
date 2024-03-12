@@ -23,7 +23,7 @@ class Main:
     def __select_action(self):
         print('What do you wish to do?\n1. Perform a new search\n2. Present the results from a previous search')
         while True:
-            try:
+            try: # TODO Keyboard Interrupt
                 answer = int(input('Please enter the number of the action: '))
                 if answer == 1 or answer == 2: break
                 raise Exception
@@ -98,7 +98,7 @@ class Main:
         while len(self.search_ids) == 0:
             ids = input('Please enter the IDs of the searches you want to be presented (use a single space as a separator): ').split(' ')
             ok = True
-            for id in ids:
+            for id in ids: # TODO try except
                 if int(id) not in search_id_list:
                     ok = False
                     break
