@@ -105,7 +105,7 @@ class Search:
 
 
     def __extract_next_url(self, output):
-        links = output.split('Link: ')[1]
+        links = output.split('link: ')[1]
         links = links.split('x-github-api-version-selected: ')[0] # The header following the link header.
         links = links.split(', ') # Separates the links.
         for link in links:
