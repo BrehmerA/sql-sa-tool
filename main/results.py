@@ -34,7 +34,6 @@ class Results:
 
         print('------Results From Analysis-----')
         self.__print_basics(count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language, count_analyzed_repos)
-        self.__print_statistics(count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language)
         #Start printing plots
         fig, ((stars,followers),(size,contributors)) = plt.subplots(2,2)
         fig.suptitle('Number of found SQLivs in project vs')
@@ -71,27 +70,6 @@ class Results:
             print(f'{res[0]}{" repos with SQLiv":<40}', res[1])
         for res in count_no_sqliv_by_language:
             print(f'{res[0]}{" repos without SQLiv":<40}', res[1])
-
-
-    def __print_statistics(self, count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language):
-        """Calculate statistics on result and print to screen"""
-        print('------- STATISTICS SECTION -------')
-        stars_param = []
-        followers_param = []
-        size__param = []
-        contributors_param = []
-        sqliv_count = []
-        for repo in count_sqliv_in_repos:
-            stars_param.append(repo[1])
-            followers_param.append(repo[2])
-            size__param.append(repo[3])
-            contributors_param.append(repo[4])
-            sqliv_count.append(repo[5])
-        print('Pearsonr correlation for sqliv found against stars, followers, project size, contributors')
-        print(f'{"stars:":<10}', sp.stats.pearsonr(stars_param, sqliv_count)) 
-        print(f'{"followers:":<10}', sp.stats.pearsonr(followers_param, sqliv_count)) 
-        print(f'{"size:":<10}', sp.stats.pearsonr(size__param, sqliv_count)) 
-        print(f'{"size:":<10}', sp.stats.pearsonr(contributors_param, sqliv_count)) 
 
 
     def write_to_file(self):

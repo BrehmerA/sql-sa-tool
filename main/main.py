@@ -93,7 +93,7 @@ class Main:
                         sep = ['\t']*4
                     case _:
                         sep = '\t'
-                string += f'{value}{''.join(sep)}'
+                string += f'{value}{"".join(sep)}'
             print(string)
         while len(self.search_ids) == 0:
             ids = input('Please enter the IDs of the searches you want to be presented (use a single space as a separator): ').split(' ')
