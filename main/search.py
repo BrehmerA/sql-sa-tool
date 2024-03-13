@@ -126,10 +126,10 @@ class Search:
         # We can probably go around this by using different values for order_by and sort.
         # We can also define an exact number of followers/stars, as well as size, instead of above/below a certain value.
 
-        # curl --include --request GET --url "https://api.github.com/search/repositories?q=language:Python+followers:>2+size:>100+stars:>2&s=stars&o=desc&per_page=100" --header "Accept: application/vnd.github+json"
+        # curl --include --request GET --url "https://api.github.com/search/repositories?q=-is:fork+language:Python+followers:>2+size:>100+stars:>2&s=stars&o=desc&per_page=100" --header "Accept: application/vnd.github+json"
 
-        # url = f"https://api.github.com/search/repositories?q=language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
-        url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+        # url = f"https://api.github.com/search/repositories?q=-is:fork+language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+        url = f"https://api.github.com/search/repositories?q=-is:fork+language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
         # Saves the search.
         self.DB.connect()
