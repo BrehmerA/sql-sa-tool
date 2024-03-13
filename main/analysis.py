@@ -35,17 +35,9 @@ class Analysis:
         path = self.__prepareFolder(lang, searchID)
         repos = self.__getRepos(lang, searchID)
         var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
-        var_length = len(var)
-        batch = 20
         print(f'Analyzing {str(len(repos))} repos.')
-        for i in range(0, var_length, batch):
-            if i+batch < var_length:
-                nextBatch = [var[index] for index in range(i,i+batch)]
-            else:
-                nextBatch = [var[index] for index in range(i,var_length)]
-            with Pool(4) as p:
-                p.starmap(runAnalysis.search, nextBatch)
-            self.__checkCleanUp(path)
+        with Pool(4) as p:
+            p.starmap(runAnalysis.search, var)
 
     def __getRepos(self, lang, searchID) -> list:
         """Get repos from DB after search"""
@@ -95,19 +87,7 @@ class Analysis:
             os.makedirs(path)
         return path
     
-    def __checkCleanUp(self, path):
-        """Function to clean up in a folder and sub folders"""
-        if os.path.exists(path) and not os.path.isfile(path):
-            if len(os.listdir(path)) != 0:
-                for root, dirs, files in os.walk(path):
-                    for dir in dirs:
-                        os.chmod(os.path.join(root, dir), stat.S_IRWXU)
-                    for file in files:
-                        os.chmod(os.path.join(root, file), stat.S_IRWXU)
-                try:
-                    shutil.rmtree(path)
-                except:
-                    print('Could not empty folder.')
+
 
 if __name__=='__main__':
     pass
