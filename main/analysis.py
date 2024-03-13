@@ -33,7 +33,7 @@ class Analysis:
         """Search found repositories for DB operations."""
 
         path = self.__prepareFolder(lang, searchID)
-        repos = self.getRepos(lang, searchID)
+        repos = self.__getRepos(lang, searchID)
         var = [(lang, path, rep[0], rep[1], searchID) for rep in repos]
         var_length = len(var)
         batch = 20
@@ -47,7 +47,7 @@ class Analysis:
                 p.starmap(runAnalysis.search, nextBatch)
             self.__checkCleanUp(path)
 
-    def getRepos(self, lang, searchID) -> list:
+    def __getRepos(self, lang, searchID) -> list:
         """Get repos from DB after search"""
 
         self.DB.connect()
