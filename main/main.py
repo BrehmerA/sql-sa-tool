@@ -23,7 +23,7 @@ class Main:
     def __select_action(self):
         print('What do you wish to do?\n1. Perform a new search\n2. Present the results from a previous search')
         while True:
-            try: # TODO Keyboard Interrupt
+            try:
                 answer = int(input('Please enter the number of the action: '))
                 if answer == 1 or answer == 2: break
                 raise Exception
