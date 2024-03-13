@@ -30,7 +30,7 @@ INSERT OR IGNORE INTO search_repository (search, repository) VALUES
 INSERT OR IGNORE into result (id,search,repository,sqliv,number_of_followers,size,number_of_stars,number_of_contributors) VALUES
 (10001,99999,26554,1,16742,40093,16742,3),
 (10002,99999,46939,1,7853,7696,7853,3),
-(10003,99999,54383,1,185,701,185,3),
+(10003,99999,54383,0,185,701,185,3),
 (10004,99999,57419,0,5866,1752,5866,3),
 (10005,99999,71978,0,139,224,139,3),
 (10006,99999,79012,0,139,340,139,3),
@@ -40,7 +40,6 @@ INSERT OR IGNORE into result (id,search,repository,sqliv,number_of_followers,siz
 INSERT OR IGNORE INTO sqliv_type (result,file_relative_repo,location) VALUES
 (10001,"main/c1.py","10,1,10,5"),
 (10001,"main/c2.py","10,1,10,5"),
-(10002,"main/c3.py","10,1,10,5"),
-(10003,"main/c4.py","10,1,10,5");
+(10002,"main/c3.py","10,1,10,5");
 
 
