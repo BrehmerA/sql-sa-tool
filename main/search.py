@@ -105,15 +105,17 @@ class Search:
 
 
     def __extract_next_url(self, output):
-        links = output.split('link: ')[1]
-        links = links.split('x-github-api-version-selected: ')[0] # The header following the link header.
-        links = links.split(', ') # Separates the links.
-        for link in links:
-            link = link.split('>; rel="') # Separates the url and the value.
-            url = link[0][1:] # Removes the initial <.
-            value = link[1].replace('"', '') # Removes the ending ".
-            value = self.__remove_tabs_and_new_lines(value)
-            if value == 'next': return url
+        links = output.split('Link: ')
+        if len(links) > 1:
+            links = output.split('Link: ')[1]
+            links = links.split('x-github-api-version-selected: ')[0] # The header following the link header.
+            links = links.split(', ') # Separates the links.
+            for link in links:
+                link = link.split('>; rel="') # Separates the url and the value.
+                url = link[0][1:] # Removes the initial <.
+                value = link[1].replace('"', '') # Removes the ending ".
+                value = self.__remove_tabs_and_new_lines(value)
+                if value == 'next': return url
         return None
 
 
@@ -128,13 +130,18 @@ class Search:
 
         # curl --include --request GET --url "https://api.github.com/search/repositories?q=-is:fork+language:Python+followers:>2+size:>100+stars:>2&s=stars&o=desc&per_page=100" --header "Accept: application/vnd.github+json"
 
-        # url = f"https://api.github.com/search/repositories?q=-is:fork+language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
-        url = f"https://api.github.com/search/repositories?q=-is:fork+language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+        # url = f"https://api.github.com/search/repositories?q=language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+
+        followers = f"followers:{f'>{self.min_number_of_followers}' if self.max_number_of_followers is None else f'{self.min_number_of_followers}..{self.max_number_of_followers}'}"
+        size = f"size:{f'>{self.min_size}' if self.max_size is None else f'{self.min_size}..{self.max_size}'}"
+        stars = f"stars:{f'>{self.min_number_of_stars}' if self.max_number_of_stars is None else f'{self.min_number_of_stars}..{self.max_number_of_stars}'}"
+        url=f"https://api.github.com/search/repositories?q=language:{self.language}+{stars}+{size}+-is:fork&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
+        # url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
         # Saves the search.
         self.DB.connect()
         self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), 1 if self.language == 'Java' else 2, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
-        search_id = self.DB.fetch_one('''SELECT MAX(id) FROM search''')[0]
+        search_id = self.DB.last_row_id()
         self.DB.close()
 
         while (url is not None):
@@ -149,7 +156,7 @@ class Search:
 
     def __filter_on_min_number_of_contributors(self, search_id):
         self.DB.connect()
-        repositories = self.DB.fetch_all('''SELECT DISTINCT r.* FROM repository AS r, search_repository as sr WHERE sr.search = ?''', (search_id, ))
+        repositories = self.DB.fetch_all('''SELECT DISTINCT r.* FROM repository AS r LEFT JOIN search_repository sr ON r.id=sr.repository WHERE sr.search = ?''', (search_id, ))
         for index in range(0, len(repositories)):
             repository = repositories[index]
             id = repository[0]
