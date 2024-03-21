@@ -10,7 +10,7 @@ from pathlib import Path
 
 from database.database import Database
 
-DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
+DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO https://survey.stackoverflow.co/2023/#section-most-popular-technologies-databases
 DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
 codeQLDB = 'codeQLDBmap'
 
