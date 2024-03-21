@@ -7,12 +7,9 @@ class Database:
     """Responsible for the DB communication."""
 
     __FILE_NAME = Path(os.path.dirname(os.path.abspath(__file__))) / 'database.db'
-    #__CONNECTION = None
-    #__CURSOR = None
-
 
     def __init__(self):
-        """The constructor..."""
+        """Init function"""
         self.__CONNECTION = None
         self.__CURSOR = None
 
@@ -47,15 +44,18 @@ class Database:
         return self.__CURSOR.fetchall()
 
 
-    def execute(self, query, arguments):
+    def execute(self, query, arguments=None):
         """Executes and commits a create, insert, or drop statement."""
 
         self.__execute(query, arguments)
         self.__CONNECTION.commit()
 
-    def lastRowID(self):
-        """Return the last row for the cursor"""
+
+    def last_row_id(self):
+        """Fetches the last generated ID."""
+
         return self.__CURSOR.lastrowid
+
 
     def close(self):
         """Closes the database connection."""

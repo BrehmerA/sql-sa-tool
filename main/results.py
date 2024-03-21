@@ -1,20 +1,23 @@
 import csv
 from datetime import datetime
-import matplotlib.pyplot as plt
-import scipy as sp
-import matplotlib as mpl
 from pathlib import Path
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import scipy as sp
 from database.database import Database
+
 
 class Results:
     """Responsible for presenting the results."""
 
     __RESULT_PARAMETERS = ['stars', 'followers', 'size', 'contributors']
 
+
     def __init__(self, searchID : tuple):
         """The constructor..."""
         self.__searchID = searchID
+
 
     def print_to_screen(self):
         """Print results to screen"""
@@ -31,7 +34,6 @@ class Results:
 
         print('------Results From Analysis-----')
         self.__print_basics(count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language, count_analyzed_repos)
-        self.__print_statistics(count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language)
         #Start printing plots
         fig, ((stars,followers),(size,contributors)) = plt.subplots(2,2)
         fig.suptitle('Number of found SQLivs in project vs')
@@ -43,6 +45,7 @@ class Results:
         plt.draw()
         plt.show()
 
+
     def __sort_and_print(self, repo_sqliv_stats : list, result_parameter : int, axel):
          """Sort found sqliv by result parameter and plot figure subplot"""
          x = []
@@ -53,6 +56,7 @@ class Results:
          axel.set_title(self.__RESULT_PARAMETERS[result_parameter-1])
          axel.set(ylabel='SQLIV in repo', xlabel=f'{self.__RESULT_PARAMETERS[result_parameter-1]} in repo')
          axel.plot(x, y, 'o', color='black')
+
 
     def __print_basics(self, count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language, count_analyzed_repos):
         """Print result"""
@@ -66,26 +70,6 @@ class Results:
             print(f'{res[0]}{" repos with SQLiv":<40}', res[1])
         for res in count_no_sqliv_by_language:
             print(f'{res[0]}{" repos without SQLiv":<40}', res[1])
-
-    def __print_statistics(self, count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language):
-        """Calculate statistics on result and print to screen"""
-        print('------- STATISTICS SECTION -------')
-        stars_param = []
-        followers_param = []
-        size__param = []
-        contributors_param = []
-        sqliv_count = []
-        for repo in count_sqliv_in_repos:
-            stars_param.append(repo[1])
-            followers_param.append(repo[2])
-            size__param.append(repo[3])
-            contributors_param.append(repo[4])
-            sqliv_count.append(repo[5])
-        print('Pearsonr correlation for sqliv found against stars, followers, project size, contributors')
-        print(f'{"stars:":<10}', sp.stats.pearsonr(stars_param, sqliv_count)) 
-        print(f'{"followers:":<10}', sp.stats.pearsonr(followers_param, sqliv_count)) 
-        print(f'{"size:":<10}', sp.stats.pearsonr(size__param, sqliv_count)) 
-        print(f'{"size:":<10}', sp.stats.pearsonr(contributors_param, sqliv_count)) 
 
 
     def write_to_file(self):
@@ -163,9 +147,3 @@ class Results:
         count_searched_repos = DB.fetch_one(f'''SELECT COUNT(*) from search_repository WHERE search IN ({','.join(['?']*len(self.__searchID))})''', self.__searchID)[0]
         DB.close()
         return [count_sqliv_in_repos, count_sqliv_by_language, count_repos_with_no_sqliv, count_no_sqliv_by_language, count_searched_repos]
-
-if __name__ == '__main__':
-        res = Results((1,2))
-        res.print_to_screen()
-        res.write_to_file()
-        pass
