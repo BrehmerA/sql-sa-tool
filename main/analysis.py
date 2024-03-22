@@ -19,12 +19,14 @@ class Analysis:
 
     def __init__(self):
         """The constructor..."""
+
         if not os.path.exists(os.getcwd() + '/cloned'):
             os.mkdir(os.getcwd() + '/cloned')
 
 
-    def startFilter(self, searchID) -> dict:
-        """Start the filtering and analysis"""
+    def start_filter(self, searchID) -> dict:
+        """Start the filtering and analysis."""
+
         self.__searchForDBConnections("Python", searchID)
         self.__searchForDBConnections("Java", searchID)
 
@@ -40,10 +42,10 @@ class Analysis:
             p.starmap(runAnalysis.search, var)
 
     def __getRepos(self, lang, searchID) -> list:
-        """Get repos from DB after search"""
+        """Get repos from DB after the search."""
 
         self.DB.connect()
-        dbResults = self.DB.fetch_all(
+        dbResults = self.DB.fetch_all( # TODO Add some sort of check ensuring that only repos which haven't already been analysed are retrieved.
             '''SELECT DISTINCT url, repository
             FROM search_repository sr
             LEFT JOIN repository r
@@ -86,7 +88,6 @@ class Analysis:
         else:
             os.makedirs(path)
         return path
-    
 
 
 if __name__=='__main__':
