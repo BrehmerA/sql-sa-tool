@@ -3,6 +3,7 @@ import shlex
 import subprocess
 from datetime import date, datetime
 from pathlib import Path
+from sys import platform
 from time import sleep
 
 from database.database import Database
@@ -16,6 +17,7 @@ class Search:
 
     DB = Database()
     PATH_TO_TOKEN = Path(__file__).resolve().parent / '.token'
+    ORDER = ('asc', 'desc')
     NUMBER_OF_RESULTS_PER_PAGE = 100 # Max is 100.
 
     token = None
@@ -27,11 +29,12 @@ class Search:
     max_size = None
     min_number_of_stars = None
     max_number_of_stars = None
+    number_of_stars = None
     min_number_of_contributors = None
     max_number_of_contributors = None
 
 
-    def __init__(self, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors):
+    def __init__(self, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, number_of_stars, min_number_of_contributors, max_number_of_contributors):
         """The constructor..."""
 
         self.language = language
@@ -41,6 +44,7 @@ class Search:
         self.max_size = max_size
         self.min_number_of_stars = min_number_of_stars
         self.max_number_of_stars = max_number_of_stars
+        self.number_of_stars = number_of_stars
         self.min_number_of_contributors = min_number_of_contributors
         self.max_number_of_contributors = max_number_of_contributors
 
@@ -83,6 +87,7 @@ class Search:
 
 
     def __extract_repositories(self, content, search_id):
+        number_of_extracted_repositories = 0
         for repository in content['items']:
             repository_id = repository['id']
             repository_name = repository['name']
@@ -91,23 +96,28 @@ class Search:
             repository_number_of_followers = repository['watchers_count']
             repository_size = repository['size']
             repository_number_of_stars = repository['stargazers_count']
-            print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars)
             # Saves the repository:
             self.DB.connect()
             exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, ))
             exists = False if exists is None else exists[0] == repository_id
+            status = str()
             if not exists:
+                status = 'NEW'
                 self.DB.execute('''INSERT INTO repository(id, name, url, number_of_followers, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars))
             else:
                 self.DB.execute('''UPDATE repository SET number_of_followers = ?, size = ?, number_of_stars = ? WHERE id = ?''', (repository_id, repository_number_of_followers, repository_size, repository_number_of_stars))
             self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
             self.DB.close()
+            print(repository_id, repository_name, repository_url, repository_number_of_followers, repository_size, repository_number_of_stars, status)
+            number_of_extracted_repositories += 1
+        return number_of_extracted_repositories
 
 
     def __extract_next_url(self, output):
-        links = output.split('Link: ')
+        link_header = 'link: ' if platform == 'darwin' else 'Link: '
+        links = output.split(link_header)
         if len(links) > 1:
-            links = output.split('Link: ')[1]
+            links = output.split(link_header)[1]
             links = links.split('x-github-api-version-selected: ')[0] # The header following the link header.
             links = links.split(', ') # Separates the links.
             for link in links:
@@ -132,26 +142,35 @@ class Search:
 
         # url = f"https://api.github.com/search/repositories?q=language:{self.language}+{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+{f'+size:<{self.max_size}' if self.max_size is not None else ''}+{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
-        followers = f"followers:{f'>{self.min_number_of_followers}' if self.max_number_of_followers is None else f'{self.min_number_of_followers}..{self.max_number_of_followers}'}"
-        size = f"size:{f'>{self.min_size}' if self.max_size is None else f'{self.min_size}..{self.max_size}'}"
-        stars = f"stars:{f'>{self.min_number_of_stars}' if self.max_number_of_stars is None else f'{self.min_number_of_stars}..{self.max_number_of_stars}'}"
-        url=f"https://api.github.com/search/repositories?q=language:{self.language}+{stars}+{size}+-is:fork&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
-        # url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
+        search_ids = []
 
-        # Saves the search.
-        self.DB.connect()
-        self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), 1 if self.language == 'Java' else 2, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
-        search_id = self.DB.last_row_id()
-        self.DB.close()
+        for o in self.ORDER:
+            # followers = f"followers:{f'>{self.min_number_of_followers}' if self.max_number_of_followers is None else f'{self.min_number_of_followers}..{self.max_number_of_followers}'}"
+            size = f"size:{f'>{self.min_size - 1}' if self.max_size is None else f'{self.min_size - 1}..{self.max_size + 1}'}"
+            # stars = f"stars:{f'>{self.min_number_of_stars}' if self.max_number_of_stars is None else f'{self.min_number_of_stars}..{self.max_number_of_stars}'}"
+            stars = f'stars:{self.number_of_stars}'
+            url = f"https://api.github.com/search/repositories?q=language:{self.language}+{size}+{stars}+-is:fork&s=stars&o={o}&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}"
+            # url = f"https://api.github.com/search/repositories?q=language:{self.language}+followers:>{self.min_number_of_followers}{f'+followers:<{self.max_number_of_followers}' if self.max_number_of_followers is not None else ''}+size:>{self.min_size}{f'+size:<{self.max_size}' if self.max_size is not None else ''}+stars:>{self.min_number_of_stars}{f'+stars:<{self.max_number_of_stars}' if self.max_number_of_stars is not None else ''}&s=stars&o=asc&per_page={self.NUMBER_OF_RESULTS_PER_PAGE}" # desc
 
-        while (url is not None):
-            output = self.__request(url)
-            content = self.__extract_content(output)
-            self.__extract_repositories(content, search_id)
-            url = self.__extract_next_url(output)
-            sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
+            # Saves the search.
+            self.DB.connect()
+            self.DB.execute('''INSERT INTO search(date, language, min_number_of_followers, max_number_of_followers, min_size, max_size, min_number_of_stars, max_number_of_stars, min_number_of_contributors, max_number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (date.today(), 1 if self.language == 'Java' else 2, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors))
+            search_id = self.DB.last_row_id()
+            search_ids.append(search_id)
+            self.DB.close()
 
-        return search_id
+            number_of_extracted_repositories = 0
+
+            while (url is not None):
+                output = self.__request(url)
+                content = self.__extract_content(output)
+                number_of_extracted_repositories += self.__extract_repositories(content, search_id)
+                url = self.__extract_next_url(output)
+                sleep(2) # In order to adhere to the rate limit of 30 authenticated requests per minute.
+
+            if number_of_extracted_repositories < 1000: break
+
+        return search_ids
 
 
     def __filter_on_min_number_of_contributors(self, search_id):
@@ -182,6 +201,7 @@ class Search:
 
 
     def run(self):
-        search_id = self.__search_repositories()
-        self.__filter_on_min_number_of_contributors(search_id)
-        return search_id
+        search_ids = self.__search_repositories()
+        # for search_id in search_ids: # TODO How can filtering on min number of contributors be made more effective?
+            # self.__filter_on_min_number_of_contributors(search_id)
+        return search_ids

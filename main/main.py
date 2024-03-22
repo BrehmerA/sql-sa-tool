@@ -14,6 +14,7 @@ class Main:
     max_size = None
     min_number_of_stars = 2
     max_number_of_stars = None
+    number_of_stars = None
     min_number_of_contributors = 2
     max_number_of_contributors = None
 
@@ -122,21 +123,26 @@ class Main:
 
         answer = self.__select_action()
         if answer == 1:
-            self.__define_search()
-            search_id = Search(
-                self.language,
-                self.min_number_of_followers, self.max_number_of_followers,
-                self.min_size, self.max_size,
-                self.min_number_of_stars, self.max_number_of_stars,
-                self.min_number_of_contributors, self.max_number_of_contributors,
-            ).run()
+            # self.__define_search()
+            self.language = 'Python'
+            self.min_size = 100
+            for i in range(2, 100001):
+                self.number_of_stars = i
+                search_ids = Search(
+                    self.language,
+                    self.min_number_of_followers, self.max_number_of_followers,
+                    self.min_size, self.max_size,
+                    self.min_number_of_stars, self.max_number_of_stars, self.number_of_stars,
+                    self.min_number_of_contributors, self.max_number_of_contributors,
+                ).run()
 
-            Analysis().startFilter(search_id)
-
-        self.__select_search()
-        results = Results(self.search_ids)
-        results.print_to_screen()
-        results.write_to_file()
+                for search_id in search_ids:
+                    Analysis().start_filter(search_id)
+        else:
+            self.__select_search()
+            results = Results(self.search_ids)
+            results.print_to_screen()
+            results.write_to_file()
 
 
 if __name__ == '__main__':
