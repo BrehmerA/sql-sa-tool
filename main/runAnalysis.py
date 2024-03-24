@@ -13,7 +13,13 @@ from database.database import Database
 DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
 DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
 codeQLDB = 'codeQLDBmap'
-
+SQL_KEY_WORDS = [r'SELECT', r'UPDATE', r'INSERT', r'DELETE', r'CREATE', r'ALTER', r'DROP']
+keyWordString = r'('+r'|'.join(SQL_KEY_WORDS)+r')'
+concatPlusSign = r'((\"|\').*'+keyWordString+r'\b.*(\"|\')\s*\+\s*\w+)+'
+concatAppendJ = r'(append\s*\(\s*"'+keyWordString+r'\b.*"\s*\)\s*\.\s*append\s*\(\s*\w*\s*\))+'
+concatFormatJ = r'(String\s*\.\s*format\s*\(\s*"\s*'+keyWordString+r'\b.*%s.*"\s*,\s*\w+\s*\))+'
+concatFormatP = r'(.*"\s*'+keyWordString+r'\b.*"\s*\.\s*format\s*\((\s*\w+\s*)(,\s*\w+\s*)*\))+'
+concatPercentP = r'((\'|\")\s*'+keyWordString+r'\b.*?(%s|%d).*?(\'|\")\s*%\s*\()+'
 
 def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
@@ -97,38 +103,46 @@ def __createSearchRegexPython() -> str:
 def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     """Perform the codeQL analysis and save results to the DB."""
 
+    regexSet = []
+    extension = ''
+    if lang == 'Python':
+        regexSet.append(concatPlusSign, concatFormatP, concatPercentP)
+        extension = '*.py'
+    elif lang == 'Java':
+        regexSet.append(concatPlusSign, concatAppendJ, concatFormatJ)
+        extension = '*.java'
+    print(regexSet)
     resultDict = {
         'sqliv' : None,
         'type' : [],
     }
-    packs = 'python-security-extended.qls' if lang=='Python' else 'java-security-extended.qls'
-    lookFor = 'SQL query built from user-controlled sources' if lang=='Python' else 'Query built by concatenation with a possibly-untrusted string'
-    language = f'--language={str(lang).lower()}'
-    source = f'--source-root={cloneInto}'
-    newDBpath = Path.joinpath(cloneInto, Path(codeQLDB))
-    output = f'--output={cloneInto}\\resCodeScanCSV.csv'
-    outputFile = f'{cloneInto}\\resCodeScanCSV.csv'
-    print(f'Preparing analysis for {str(cloneInto)}.')
-    completeBuild = subprocess.Popen(['codeql', 'database', 'create', str(newDBpath), source, language], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Create the analysis database
-    cmdBuildOutput = completeBuild.stdout.read().decode('utf-8')
-    if 'Successfully created database' in cmdBuildOutput:
-        print(f'Running analysis on {str(cloneInto)}.')
-        completeAnalysis = subprocess.run(['codeql', 'database', 'analyze', str(newDBpath), packs, '--format=CSV', output], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        print(f'Analysis for {str(cloneInto)} completed')
-        try:
-            with open(outputFile) as results:
-                    reader = csv.reader(results, delimiter=',')
-                    for row in reader:
-                        if row[0]==lookFor:
-                            resultDict['type'].append((row[0], row[-5], row[-4], row[-3], row[-2], row[-1]))
-            if len(resultDict['type']) > 0:
-                resultDict['sqliv'] = 1
+    for file in list(cloneInto.rglob(extension)):
+            try:
+                f=open(file)
+            except FileNotFoundError:
+                print('File not found.')
+            except PermissionError:
+                print('No permission to open file.')
+            except:
+                print('Unknown error.')
             else:
-                resultDict['sqliv'] = 0
-        except Exception as e:
-            print(e)
+                with f as fp:
+                    text = fp.read()
+                    for reg in regexSet:
+                        for match in re.finditer(reg, text, re.IGNORECASE):
+                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end()))
     return resultDict
 
+def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int) -> list:
+    """Returns (filename, line_number, col_start, line:number, col_end) of `index` in `s`."""
+    
+    if not len(s):
+        return 1, 1
+    sp = s[:indexEnd+1].splitlines(keepends=True)
+    line = len(sp)
+    end = len(sp[-1])
+    start = end - (indexEnd-indexStart)
+    return [file.name, line, start, line,  end]
 
 def __saveAnalysisResults(analysisResults, repoID, searchID):
     """Save the analysis result to database."""
