@@ -60,7 +60,7 @@ def __searchFiles(complete, lang) -> bool:
             searchRegex = __createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
             try:
-                f=open(file)
+                f=open(file, errors='ignore')
             except FileNotFoundError:
                 print('File not found.')
             except PermissionError:
@@ -103,13 +103,18 @@ def __createSearchRegexPython() -> str:
 def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     """Perform the codeQL analysis and save results to the DB."""
 
+    print('Running analysis on ', cloneInto)
     regexSet = []
     extension = ''
     if lang == 'Python':
-        regexSet.append(concatPlusSign, concatFormatP, concatPercentP)
+        regexSet.append(concatPlusSign)
+        regexSet.append(concatFormatP)
+        regexSet.append(concatPercentP)
         extension = '*.py'
     elif lang == 'Java':
-        regexSet.append(concatPlusSign, concatAppendJ, concatFormatJ)
+        regexSet.append(concatPlusSign)
+        regexSet.append(concatAppendJ)
+        regexSet.append(concatFormatJ)
         extension = '*.java'
     print(regexSet)
     resultDict = {
@@ -118,7 +123,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     }
     for file in list(cloneInto.rglob(extension)):
             try:
-                f=open(file)
+                f=open(file, errors='ignore')
             except FileNotFoundError:
                 print('File not found.')
             except PermissionError:
@@ -130,7 +135,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                     text = fp.read()
                     for reg in regexSet:
                         for match in re.finditer(reg, text, re.IGNORECASE):
-                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end()))
+                            resultDict['type']= __index_to_coordinates(fp, text, match.start(), match.end())
     return resultDict
 
 def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int) -> list:
