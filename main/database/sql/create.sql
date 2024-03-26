@@ -7,12 +7,11 @@ CREATE TABLE search(
     id INTEGER PRIMARY KEY,
     date TEXT NOT NULL,
     language INTEGER NOT NULL,
-    min_number_of_followers INTEGER NOT NULL,
-    max_number_of_followers INTEGER,
     min_size INTEGER NOT NULL,
     max_size INTEGER,
-    min_number_of_stars INTEGER NOT NULL,
+    min_number_of_stars INTEGER,
     max_number_of_stars INTEGER,
+    number_of_stars INTEGER,
     min_number_of_contributors INTEGER NOT NULL,
     max_number_of_contributors INTEGER,
     FOREIGN KEY(language) REFERENCES language(id)
@@ -22,10 +21,10 @@ CREATE TABLE repository(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     url TEXT NOT NULL UNIQUE,
-    number_of_followers INTEGER NOT NULL,
     size INTEGER NOT NULL,
     number_of_stars INTEGER NOT NULL,
-    number_of_contributors INTEGER
+    number_of_contributors INTEGER,
+    analyzed INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE search_repository(
@@ -40,7 +39,7 @@ CREATE TABLE result(
     search INTEGER NOT NULL,
     repository INTEGER NOT NULL,
     sqliv INTEGER, -- TODO NOT NULL,
-    number_of_followers INTEGER NOT NULL,
+    number_of_followers INTEGER NOT NULL, -- TODO Remove.
     size INTEGER NOT NULL,
     number_of_stars INTEGER NOT NULL,
     number_of_contributors INTEGER,
