@@ -7,6 +7,7 @@ from sys import platform
 from time import sleep
 
 from database.database import Database
+from multiprocess import Process
 
 
 class Search:
@@ -157,30 +158,53 @@ class Search:
 
 
     def __filter_on_min_number_of_contributors(self, search_id):
+
+        def filter_on_min_number_of_contributors(repositories, i):
+            DB = Database()
+            DB.connect()
+            for j in range(len(repositories)):
+                repository = repositories[j]
+                id = repository[0]
+                name = repository[1]
+                url = f'{repository[2]}/contributors?per_page={int(self.min_number_of_contributors)+1}'
+                output = self.__request(url)
+                content = self.__extract_content(output)
+                try:
+                    message = content['message']
+                    print(message)
+                except:
+                    number_of_contributors = len(content) # TODO Not the actual number.
+                    if number_of_contributors >= int(self.min_number_of_contributors) and (self.max_number_of_contributors is None or number_of_contributors <= int(self.max_number_of_contributors)):
+                        DB.execute('''UPDATE repository SET number_of_contributors = ? WHERE id = ?''', (number_of_contributors, id))
+                        print(f'{i}: Updated the repository with id {id} and name {name} in the DB.')
+                    else:
+                        DB.execute('''DELETE FROM search_repository WHERE repository = ?''', (id, ))
+                        DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
+                        print(f'{i}: Deleted the repository with id {id} and name {name} from the DB.')
+                finally:
+                    i += 1
+            DB.close()
+
         self.DB.connect()
         repositories = self.DB.fetch_all('''SELECT DISTINCT r.* FROM repository AS r LEFT JOIN search_repository sr ON r.id=sr.repository WHERE sr.search = ?''', (search_id, ))
-        for index in range(0, len(repositories)):
-            repository = repositories[index]
-            id = repository[0]
-            name = repository[1]
-            url = f'{repository[2]}/contributors?per_page={int(self.min_number_of_contributors)+1}'
-            output = self.__request(url)
-            content = self.__extract_content(output)
-            message = None
-            try:
-                message = content['message']
-            except:
-                number_of_contributors = len(content) # TODO Not the actual number.
-                if number_of_contributors >= int(self.min_number_of_contributors) and (self.max_number_of_contributors is None or number_of_contributors <= int(self.max_number_of_contributors)):
-                    self.DB.execute('''UPDATE repository SET number_of_contributors = ? WHERE id = ?''', (number_of_contributors, id))
-                    print(f'{index}: Updated the repository with id {id} and name {name} in the DB.')
-                else:
-                    self.DB.execute('''DELETE FROM search_repository WHERE repository = ?''', (id, ))
-                    self.DB.execute('''DELETE FROM repository WHERE id = ?''', (id, ))
-                    print(f'{index}: Deleted the repository with id {id} and name {name} from the DB.')
-            if message is not None: print(message)
-            # sleep(0.1) # In order to adhere to the rate limit. # TODO Look up if another rate limit applies to this endpoint.
         self.DB.close()
+        splits = []
+        for i in range(0, 1000, 250):
+            try:
+                split = repositories[i:i + 250]
+                splits.append(split)
+            except:
+                split = repositories[i:len(repositories)]
+                splits.append(split)
+                break
+        processes = []
+        for i in range(len(splits)):
+            split = splits[i]
+            process = Process(target=filter_on_min_number_of_contributors, args=(split, i * 250))
+            processes.append(process)
+            process.start()
+        for process in processes:
+            process.join()
 
 
     def run(self):

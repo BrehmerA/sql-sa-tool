@@ -123,7 +123,7 @@ class Main:
             for i in range(self.min_number_of_stars, 1001):
                 search_id = Search(
                     self.language,
-                    self.min_size, self.max_size + 1,
+                    self.min_size, self.max_size, # + 1,
                     None, None, i,
                     self.min_number_of_contributors, self.max_number_of_contributors,
                 ).run()
@@ -132,7 +132,7 @@ class Main:
             for i in range(1001, self.max_number_of_stars + 1, 100):
                 search_id = Search(
                     self.language,
-                    self.min_size, self.max_size + 1,
+                    self.min_size, self.max_size, # + 1,
                     i, None if i + 100 > self.max_number_of_stars else i + 100, None,
                     self.min_number_of_contributors, self.max_number_of_contributors,
                 ).run()
