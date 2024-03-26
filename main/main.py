@@ -8,13 +8,10 @@ class Main:
     """The program's main class - responsible for execution."""
 
     language = 'Java'
-    min_number_of_followers = 2
-    max_number_of_followers = None
-    min_size = 100 # kB
-    max_size = None
+    min_size = 1000 # kB (i.e., 1 MB)
+    max_size = 1000000 # kB (i.e., 1 GB)
     min_number_of_stars = 2
     max_number_of_stars = None
-    number_of_stars = None
     min_number_of_contributors = 2
     max_number_of_contributors = None
 
@@ -54,14 +51,12 @@ class Main:
         print('You will now be presented a number of options to define your search. The value inside the parentheses is the default. Press Enter to select the default value, otherwise input your preferred value and press Enter.')
 
         self.language = self.__validate_input(self.language, f'Language: ({self.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
-        self.min_number_of_followers = self.__validate_input(self.min_number_of_followers, f'Minimum number of followers: ({self.min_number_of_followers}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
-        self.max_number_of_followers = self.__validate_input(self.max_number_of_followers, f'Maximum number of followers: ', lambda value: int(value) > int(self.min_number_of_followers), 'The value has to be a number and greater than the min value.')
-        self.min_size = self.__validate_input(self.min_size, f'Minimum size: ({self.min_size}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
-        self.max_size = self.__validate_input(self.max_size, f'Maximum size: ', lambda value: int(value) > int(self.min_size), 'The value has to be a number and greater than the min value.')
-        self.min_number_of_stars = self.__validate_input(self.min_number_of_stars, f'Minimum number of stars: ({self.min_number_of_stars}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
-        self.max_number_of_stars = self.__validate_input(self.max_number_of_stars, f'Maximum number of stars: ', lambda value: int(value) > int(self.min_number_of_stars), 'The value has to be a number and greater than the min value.')
-        self.min_number_of_contributors = self.__validate_input(self.min_number_of_contributors, f'Minimum number of contributors: ({self.min_number_of_contributors}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
-        self.max_number_of_contributors = self.__validate_input(self.max_number_of_contributors, f'Maximum number of contributors: ', lambda value: int(value) > int(self.min_number_of_contributors), 'The value has to be a number and greater than the min value.')
+        # self.min_size = self.__validate_input(self.min_size, f'Minimum size: ({self.min_size}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
+        # self.max_size = self.__validate_input(self.max_size, f'Maximum size: ', lambda value: int(value) > int(self.min_size), 'The value has to be a number and greater than the min value.')
+        # self.min_number_of_stars = self.__validate_input(self.min_number_of_stars, f'Minimum number of stars: ({self.min_number_of_stars}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
+        # self.max_number_of_stars = self.__validate_input(self.max_number_of_stars, f'Maximum number of stars: ', lambda value: int(value) > int(self.min_number_of_stars), 'The value has to be a number and greater than the min value.')
+        # self.min_number_of_contributors = self.__validate_input(self.min_number_of_contributors, f'Minimum number of contributors: ({self.min_number_of_contributors}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
+        # self.max_number_of_contributors = self.__validate_input(self.max_number_of_contributors, f'Maximum number of contributors: ', lambda value: int(value) > int(self.min_number_of_contributors), 'The value has to be a number and greater than the min value.')
 
         print("You've selected the following values:", self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
 
@@ -123,21 +118,28 @@ class Main:
 
         answer = self.__select_action()
         if answer == 1:
-            # self.__define_search()
-            self.language = 'Python'
-            self.min_size = 100
-            for i in range(2, 100001):
-                self.number_of_stars = i
-                search_ids = Search(
-                    self.language,
-                    self.min_number_of_followers, self.max_number_of_followers,
-                    self.min_size, self.max_size,
-                    self.min_number_of_stars, self.max_number_of_stars, self.number_of_stars,
-                    self.min_number_of_contributors, self.max_number_of_contributors,
-                ).run()
-
-                for search_id in search_ids:
-                    Analysis().start_filter(search_id)
+            self.__define_search()
+            self.max_number_of_stars = 4000 if self.language == 'Java' else 6000
+            for i in range(self.min_size, self.max_size + 1, 1000):
+                # 1000 searches
+                for j in range(self.min_number_of_stars, 1001):
+                    search_id = Search(
+                        self.language,
+                        i, i + 1000,
+                        None, None, j,
+                        self.min_number_of_contributors, self.max_number_of_contributors,
+                    ).run()
+                    # 998 searches
+                    # Analysis().start_filter(search_id)
+                for j in range(1001, self.max_number_of_stars + 1, 100):
+                    search_id = Search(
+                        self.language,
+                        i, i + 1000,
+                        j, j + 100, None,
+                        self.min_number_of_contributors, self.max_number_of_contributors,
+                    ).run()
+                    # 30 or 50 searches
+                    # Analysis().start_filter(search_id)
         else:
             self.__select_search()
             results = Results(self.search_ids)
