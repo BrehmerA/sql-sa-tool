@@ -94,7 +94,7 @@ class Search:
             exists = self.DB.fetch_one('''SELECT id FROM repository WHERE id = ?''', (repository_id, ))
             exists = False if exists is None else exists[0] == repository_id
             if not exists:
-                self.DB.execute('''INSERT INTO repository(id, name, url, size, number_of_stars) VALUES (?, ?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_size, repository_number_of_stars))
+                self.DB.execute('''INSERT INTO repository(id, name, url, size, number_of_stars) VALUES (?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_size, repository_number_of_stars))
             # else:
             #     self.DB.execute('''UPDATE repository SET number_of_followers = ?, size = ?, number_of_stars = ? WHERE id = ?''', (repository_id, repository_number_of_followers, repository_size, repository_number_of_stars))
                 self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))

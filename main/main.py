@@ -9,7 +9,7 @@ class Main:
 
     language = 'Java'
     min_size = 1000 # kB (i.e., 1 MB)
-    max_size = 1000000 # kB (i.e., 1 GB)
+    max_size = None # 1000000 # kB (i.e., 1 GB)
     min_number_of_stars = 2
     max_number_of_stars = None
     min_number_of_contributors = 2
@@ -58,7 +58,7 @@ class Main:
         # self.min_number_of_contributors = self.__validate_input(self.min_number_of_contributors, f'Minimum number of contributors: ({self.min_number_of_contributors}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
         # self.max_number_of_contributors = self.__validate_input(self.max_number_of_contributors, f'Maximum number of contributors: ', lambda value: int(value) > int(self.min_number_of_contributors), 'The value has to be a number and greater than the min value.')
 
-        print("You've selected the following values:", self.language, self.min_number_of_followers, self.max_number_of_followers, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
+        print("You've selected the following values:", self.language, self.min_size, self.max_size, self.min_number_of_stars, self.max_number_of_stars, self.min_number_of_contributors, self.max_number_of_contributors)
 
         # TODO Prevent the user from performing the same search, with the same query arguments, twice.
 
@@ -120,26 +120,24 @@ class Main:
         if answer == 1:
             self.__define_search()
             self.max_number_of_stars = 4000 if self.language == 'Java' else 6000
-            for i in range(self.min_size, self.max_size + 1, 1000):
-                # 1000 searches
-                for j in range(self.min_number_of_stars, 1001):
-                    search_id = Search(
-                        self.language,
-                        i, i + 1000,
-                        None, None, j,
-                        self.min_number_of_contributors, self.max_number_of_contributors,
-                    ).run()
-                    # 998 searches
-                    # Analysis().start_filter(search_id)
-                for j in range(1001, self.max_number_of_stars + 1, 100):
-                    search_id = Search(
-                        self.language,
-                        i, i + 1000,
-                        j, j + 100, None,
-                        self.min_number_of_contributors, self.max_number_of_contributors,
-                    ).run()
-                    # 30 or 50 searches
-                    # Analysis().start_filter(search_id)
+            for i in range(self.min_number_of_stars, 1001):
+                search_id = Search(
+                    self.language,
+                    self.min_size, self.max_size + 1,
+                    None, None, i,
+                    self.min_number_of_contributors, self.max_number_of_contributors,
+                ).run()
+                # 998 searches
+                # Analysis().start_filter(search_id)
+            for i in range(1001, self.max_number_of_stars + 1, 100):
+                search_id = Search(
+                    self.language,
+                    self.min_size, self.max_size + 1,
+                    i, None if i + 100 > self.max_number_of_stars else i + 100, None,
+                    self.min_number_of_contributors, self.max_number_of_contributors,
+                ).run()
+                # 30 or 50 searches
+                # Analysis().start_filter(search_id)
         else:
             self.__select_search()
             results = Results(self.search_ids)
