@@ -12,6 +12,7 @@ from database.database import Database
 
 DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO Extend.
 DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
+SKIP_DIRS = ['test', 'tests', 'Test', 'Tests'] #Skip directories for test files
 codeQLDB = 'codeQLDBmap'
 SQL_KEY_WORDS = [r'SELECT', r'UPDATE', r'INSERT', r'DELETE', r'CREATE', r'ALTER', r'DROP']
 keyWordString = r'('+r'|'.join(SQL_KEY_WORDS)+r')'
@@ -20,6 +21,7 @@ concatAppendJ = r'(append\s*\(\s*"'+keyWordString+r'\b.*"\s*\)\s*\.\s*append\s*\
 concatFormatJ = r'(String\s*\.\s*format\s*\(\s*"\s*'+keyWordString+r'\b.*%s.*"\s*,\s*\w+\s*\))+'
 concatFormatP = r'(.*"\s*'+keyWordString+r'\b.*"\s*\.\s*format\s*\((\s*\w+\s*)(,\s*\w+\s*)*\))+'
 concatPercentP = r'((\'|\")\s*'+keyWordString+r'\b.*?(%s|%d).*?(\'|\")\s*%\s*\()+'
+concatFStringP = r'(f(\'|\")\s*SELECT\b.*?[{]\s*\w+\s*[}].*?(\'|\"))+'
 
 def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
@@ -59,23 +61,24 @@ def __searchFiles(complete, lang) -> bool:
             extension = '*.java'
             searchRegex = __createSearchRegexJava()
         for file in list(dirPath.rglob(extension)):
-            try:
-                f=open(file, errors='ignore')
-            except FileNotFoundError:
-                print('File not found.')
-            except PermissionError:
-                print('No permission to open file.')
-            except:
-                print('Unknown error.')
-            else:
-                with f as fp:
-                    try:
-                        for line in fp:
-                            if(re.search(searchRegex, line)):
-                                found = True
-                                return found
-                    except Exception as e:
-                        pass
+            if set(file.parts).isdisjoint(SKIP_DIRS):
+                try:
+                    f=open(file, errors='ignore')
+                except FileNotFoundError:
+                    print('File not found.')
+                except PermissionError:
+                    print('No permission to open file.')
+                except:
+                    print('Unknown error.')
+                else:
+                    with f as fp:
+                        try:
+                            for line in fp:
+                                if(re.search(searchRegex, line)):
+                                    found = True
+                                    return found
+                        except Exception as e:
+                            pass
         return found
 
 
@@ -110,6 +113,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
         regexSet.append(concatPlusSign)
         regexSet.append(concatFormatP)
         regexSet.append(concatPercentP)
+        regexSet.append(concatFStringP)
         extension = '*.py'
     elif lang == 'Java':
         regexSet.append(concatPlusSign)
@@ -122,6 +126,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
         'type' : [],
     }
     for file in list(cloneInto.rglob(extension)):
+        if set(file.parts).isdisjoint(SKIP_DIRS):
             try:
                 f=open(file, errors='ignore')
             except FileNotFoundError:
@@ -135,7 +140,10 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                     text = fp.read()
                     for reg in regexSet:
                         for match in re.finditer(reg, text, re.IGNORECASE):
-                            resultDict['type']= __index_to_coordinates(fp, text, match.start(), match.end())
+                            resultDict['sqliv'] = 1
+                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end()))
+    if resultDict['sqliv'] is None:
+        resultDict['sqliv'] = 0
     return resultDict
 
 def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int) -> list:
@@ -169,6 +177,16 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
             DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location) VALUES (?,?,?)''', (lastRow, file, location))
     DB.close()
 
+def __get_files(root: Path, extension : str, exclude = SKIP_DIRS):
+    """Get all files with extension from project excluding files in SKIP_DIRS list"""
+
+    for item in root.iterdir():
+        print(item.name)
+        if item.name in exclude or item.suffix != extension:
+            continue
+        yield item
+        if item.is_dir():
+            yield from __get_files(item, extension)
 
 if __name__ == '__main__':
     pass
