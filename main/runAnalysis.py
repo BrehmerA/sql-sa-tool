@@ -30,7 +30,7 @@ preparedPythonD = r'((")\s*'+keyWordString+r'\b([^"])*?(%s|\?)([^"])*?(")+(?!\s*
 preparedPythonS = r'((\')\s*'+keyWordString+r'\b([^\'])*?(%s|\?)([^\'])*?(\')+(?!\s*%\s*(\w+|\()))+'
 preparedStatementP = [preparedPythonD, preparedPythonS]
 
-preparedJava = r'("\s*'+keyWordString+r'\b([^":])*?(:\w+\b|\?)([^"])*?("))+'
+preparedJava = r'("\s*'+keyWordString+r'\b([^":])*?((?<!:):(?!:)\w+\b|\?)([^"])*?("))+'
 preparedStatementJ = [preparedJava]
 
 def search(lang, path, repo, repoID, searchID):
