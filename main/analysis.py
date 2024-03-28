@@ -24,7 +24,7 @@ class Analysis:
             os.mkdir(os.getcwd() + '/cloned')
 
 
-    def start_filter(self, searchID) -> dict:
+    def startFilter(self, searchID):
         """Start the filtering and analysis."""
 
         self.__searchForDBConnections("Python", searchID)
@@ -91,4 +91,5 @@ class Analysis:
 
 
 if __name__=='__main__':
-    pass
+    a=Analysis()
+    a.startFilter(2)
