@@ -87,6 +87,7 @@ def __searchFiles(complete, lang) -> bool:
                         try:
                             for line in fp:
                                 if(re.search(searchRegex, line)):
+                                    print('FOUND IN: ', line)
                                     found = True
                                     return found
                         except Exception as e:
@@ -97,20 +98,16 @@ def __searchFiles(complete, lang) -> bool:
 def __createSearchRegexJava() -> str:
     """Define the search regex for the Java DB drivers."""
 
-    classNames = ''
-    for c in DBDriverJavaObjectFunction:
-        classNames = classNames + c + '|'
+    classNames = r'('+r'|'.join(DBDriverJavaObjectFunction)+r')'
     regex = r'^(?=.*\b('+classNames+r')\b).*$'
+    print(regex)
     return regex
 
 
 def __createSearchRegexPython() -> str:
     """Define the search regex for the Python DB drivers."""
 
-    drivers = ''
-    for driver in DBDriverPythonImports:
-        drivers = drivers + driver + '|'
-    drivers = drivers[:-1]
+    drivers = r'('+r'|'.join(DBDriverPythonImports)+r')'
     regex = r'^(?=.*\b(import)\b)(?=.*\b('+drivers+r')\b).*$'
     return regex
 
