@@ -77,7 +77,6 @@ class Search:
                 rate_limit = rate_limit[1].split('x-ratelimit-used: ')[0]
                 print(f"You've exceeded the rate limit. Wait until {datetime.fromtimestamp(int(rate_limit))} til you try again.")
             else: print("The content couldn't be extracted.")
-            # self.DB.close()
             exit()
         return json.loads(''.join(lines[start:]))
 
@@ -96,8 +95,6 @@ class Search:
             exists = False if exists is None else exists[0] == repository_id
             if not exists:
                 self.DB.execute('''INSERT INTO repository(id, name, url, size, number_of_stars) VALUES (?, ?, ?, ?, ?)''', (repository_id, repository_name, repository_url, repository_size, repository_number_of_stars))
-            # else:
-            #     self.DB.execute('''UPDATE repository SET number_of_followers = ?, size = ?, number_of_stars = ? WHERE id = ?''', (repository_id, repository_number_of_followers, repository_size, repository_number_of_stars))
                 self.DB.execute('''INSERT INTO search_repository(search, repository) VALUES (?, ?)''', (search_id, repository_id))
                 number_of_extracted_repositories += 1
                 print(repository_id, repository_name, repository_url, repository_size, repository_number_of_stars)
@@ -128,7 +125,7 @@ class Search:
 
         # Even with pagination the number of results is limited to 1000.
         # We can probably go around this by using different values for order_by and sort.
-        # We can also define an exact number of followers/stars, as well as size, instead of above/below a certain value.
+        # We can also define an exact number of stars, as well as size, instead of above/below a certain value.
 
         # curl --include --request GET --url "https://api.github.com/search/repositories?q=language:Python+size:>99+stars:2+-is:fork&per_page=100" --header "Accept: application/vnd.github+json"
 

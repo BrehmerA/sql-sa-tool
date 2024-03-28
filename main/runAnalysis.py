@@ -33,6 +33,7 @@ preparedStatementP = [preparedPythonD, preparedPythonS]
 preparedJava = r'("\s*'+keyWordString+r'\b([^":])*?((?<!:):(?!:)\w+\b|\?)([^"])*?("))+'
 preparedStatementJ = [preparedJava]
 
+
 def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
     cloneInto = Path(path + '/' + baseName)
@@ -115,7 +116,7 @@ def __createSearchRegexPython() -> str:
 
 
 def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
-    """Perform the codeQL analysis and save results to the DB."""
+    """Perform the static analysis and save the results to the DB."""
 
     print('Running analysis on ', cloneInto)
     regexSet = []
@@ -159,7 +160,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
 
 def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int, detectType : str) -> list:
     """Returns (filename, line_number, col_start, line:number, col_end, detect type) of `index` in `s`."""
-    
+
     if not len(s):
         return 1, 1
     sp = s[:indexEnd+1].splitlines(keepends=True)
@@ -173,12 +174,13 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
 
     DB = Database()
     DB.connect()
-    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_followers, number_of_contributors from repository WHERE id=?''', (repoID,))
+    DB.execute('''UPDATE repository SET analyzed = 1 WHERE id = ?''', (repoID, ))
+    repoQuery = DB.fetch_one('''SELECT number_of_stars, size, number_of_contributors from repository WHERE id=?''', (repoID, ))
     if analysisResults['sqliv'] is not None:
         sqliv = 1 if analysisResults['sqliv'] else 0
-        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_followers, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?)''', (searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+        DB.execute('''INSERT INTO result(search, repository, sqliv, number_of_stars, size, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?)''', (searchID, repoID, sqliv, repoQuery[0], repoQuery[1], repoQuery[2]))
     else:
-        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_followers, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?)''', (searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2], repoQuery[3]))
+        DB.execute('''INSERT INTO result(search, repository, number_of_stars, size, number_of_contributors) VALUES (?, ?, ?, ?, ?)''', (searchID, repoID, repoQuery[0], repoQuery[1], repoQuery[2]))
     lastRow = DB.last_row_id()
     print(analysisResults['type'])
     if len(analysisResults['type']) > 0:
@@ -186,11 +188,11 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
             file = hit[0]
             location = f'{hit[1]},{hit[2]},{hit[3]},{hit[4]}'
             hitType = hit[5]
-            DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location, type) VALUES (?,?,?,?)''', (lastRow, file, location, hitType))
+            DB.execute('''INSERT INTO sqliv(result, file_relative_repo, location, type) VALUES (?, ?, ?, ?)''', (lastRow, file, location, hitType))
     DB.close()
 
 def __get_files(root: Path, extension : str, exclude = SKIP_DIRS):
-    """Get all files with extension from project excluding files in SKIP_DIRS list"""
+    """Get all files with extension from project excluding files in the SKIP_DIRS list."""
 
     for item in root.iterdir():
         print(item.name)

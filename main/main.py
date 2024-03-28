@@ -9,7 +9,7 @@ class Main:
 
     language = 'Java'
     computer = 1
-    min_size = 1000 # kB (i.e., 1 MB)
+    min_size = 100 # kB (i.e., 0.1 MB)
     max_size = None # 1000000 # kB (i.e., 1 GB)
     min_number_of_stars = 2
     max_number_of_stars = None
@@ -67,7 +67,7 @@ class Main:
         db.connect()
 
         searches = db.fetch_all('''SELECT * FROM search''')
-        print('ID\tDATE\t\tLANGUAGE\tMIN NUMBER OF FOLLOWERS\t\tMAX NUMBER OF FOLLOWERS\t\tMIN SIZE\tMAX SIZE\tMIN NUMBER OF STARS\tMAX NUMBER OF STARS\tMIN NUMBER OF CONTRIBUTORS\tMAX NUMBER OF CONTRIBUTORS')
+        print('ID\tDATE\t\tLANGUAGE\tMIN SIZE\tMAX SIZE\tMIN NUMBER OF STARS\tMAX NUMBER OF STARS\tNUMBER OF STARS\t\tMIN NUMBER OF CONTRIBUTORS\tMAX NUMBER OF CONTRIBUTORS')
         search_id_list = []
         for search in searches:
             search_id_list.append(search[0])
@@ -79,19 +79,17 @@ class Main:
                     case 2:
                         sep = ['\t']*2
                     case 3:
-                        sep = ['\t']*4
+                        sep = ['\t']*2
                     case 4:
-                        sep = ['\t']*4
+                        sep = ['\t']*2
                     case 5:
-                        sep = ['\t']*2
+                        sep = ['\t']*3
                     case 6:
-                        sep = ['\t']*2
+                        sep = ['\t']*3
                     case 7:
                         sep = ['\t']*3
                     case 8:
                         sep = ['\t']*3
-                    case 9:
-                        sep = ['\t']*4
                     case _:
                         sep = '\t'
                 string += f"{value}{''.join(sep)}"
@@ -127,8 +125,8 @@ class Main:
                         None, None, i,
                         self.min_number_of_contributors, self.max_number_of_contributors,
                     ).run()
-                    # 998 searches
-                    # Analysis().start_filter(search_id)
+                    # 498 searches
+                    Analysis().start_filter(search_id)
             else:
                 for i in range(501, 1001):
                     search_id = Search(
@@ -137,8 +135,8 @@ class Main:
                         None, None, i,
                         self.min_number_of_contributors, self.max_number_of_contributors,
                     ).run()
-                    # 998 searches
-                    # Analysis().start_filter(search_id)
+                    # 500 searches
+                    Analysis().start_filter(search_id)
                 for i in range(1001, self.max_number_of_stars + 1, 100):
                     search_id = Search(
                         self.language,
@@ -147,7 +145,7 @@ class Main:
                         self.min_number_of_contributors, self.max_number_of_contributors,
                     ).run()
                     # 30 or 50 searches
-                    # Analysis().start_filter(search_id)
+                    Analysis().start_filter(search_id)
         else:
             self.__select_search()
             results = Results(self.search_ids)

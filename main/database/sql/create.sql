@@ -39,7 +39,6 @@ CREATE TABLE result(
     search INTEGER NOT NULL,
     repository INTEGER NOT NULL,
     sqliv INTEGER, -- TODO NOT NULL,
-    number_of_followers INTEGER NOT NULL, -- TODO Remove.
     size INTEGER NOT NULL,
     number_of_stars INTEGER NOT NULL,
     number_of_contributors INTEGER,
@@ -47,7 +46,7 @@ CREATE TABLE result(
     FOREIGN KEY(repository) REFERENCES repository(id)
 );
 
-CREATE TABLE sqliv_type(
+CREATE TABLE sqliv(
     result INTEGER NOT NULL,
     file_relative_repo TEXT NOT NULL,
     location TEXT NOT NULL,

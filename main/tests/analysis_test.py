@@ -21,24 +21,24 @@ class AnalysisTest(unittest.TestCase):
         DB.connect()
         try:
             DB.execute(f'''
-            INSERT OR IGNORE INTO repository (id, name, url, number_of_followers, size, number_of_stars, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (759767437, 'sql-repo-tester', 'https://api.github.com/repos/BrehmerA/sql-repo-tester', 1, 394, 0, 1))
+            INSERT OR IGNORE INTO repository (id, name, url, size, number_of_stars, number_of_contributors) VALUES (?, ?, ?, ?, ?, ?)
+            ''', (759767437, 'sql-repo-tester', 'https://api.github.com/repos/BrehmerA/sql-repo-tester', 394, 0, 1))
         except:
             pass
 
         try:
             DB.execute(f'''INSERT OR IGNORE INTO search
-                (id, date, language, min_number_of_followers, max_number_of_followers, min_number_of_stars, max_number_of_stars, min_number_of_contributors, min_size)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (10001, '2024-03-01', 1, 2, 10, 20, 100, 2, 100))
+                (id, date, language, min_number_of_stars, max_number_of_stars, min_number_of_contributors, min_size)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (10001, '2024-03-01', 1, 20, 100, 2, 100))
         except:
             pass
 
         try:
             DB.execute(f'''INSERT OR IGNORE INTO search
-                (id, date, language, min_number_of_followers, max_number_of_followers, min_number_of_stars, max_number_of_stars, min_number_of_contributors, min_size)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (10002, '2024-03-01', 2, 2, 10, 20, 100, 2, 100))
+                (id, date, language, min_number_of_stars, max_number_of_stars, min_number_of_contributors, min_size)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (10002, '2024-03-01', 2, 20, 100, 2, 100))
         except:
             pass
 

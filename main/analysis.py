@@ -24,7 +24,7 @@ class Analysis:
             os.mkdir(os.getcwd() + '/cloned')
 
 
-    def startFilter(self, searchID):
+    def start_filter(self, searchID):
         """Start the filtering and analysis."""
 
         self.__searchForDBConnections("Python", searchID)
@@ -45,7 +45,7 @@ class Analysis:
         """Get repos from DB after the search."""
 
         self.DB.connect()
-        dbResults = self.DB.fetch_all( # TODO Add some sort of check ensuring that only repos which haven't already been analysed are retrieved.
+        dbResults = self.DB.fetch_all(
             '''SELECT DISTINCT url, repository
             FROM search_repository sr
             LEFT JOIN repository r

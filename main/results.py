@@ -25,7 +25,7 @@ class Results:
         DB.connect()
         results = self.__get_raw_results()
         count_sqliv_in_repos = results[0]
-        count_sqliv_by_language = results[1] 
+        count_sqliv_by_language = results[1]
         count_repos_with_no_sqliv = results[2]
         count_no_sqliv_by_language = results[3]
         count_searched_repos = results[4]
@@ -78,14 +78,14 @@ class Results:
         DB.connect()
         results = self.__get_raw_results()
         count_sqliv_in_repos = results[0]
-        count_sqliv_by_language = results[1] 
+        count_sqliv_by_language = results[1]
         count_repos_with_no_sqliv = results[2]
         count_no_sqliv_by_language = results[3]
         count_searched_repos = results[4]
         repos_with_sqliv = len(count_sqliv_in_repos)
         count_analyzed_repos = count_repos_with_no_sqliv + repos_with_sqliv
-        raw_results =DB.fetch_all(f'''SELECT search, repository, sqliv, number_of_stars, number_of_followers, size, number_of_contributors, st.file_relative_repo, st.location from result r
-                    LEFT JOIN sqliv_type st ON r.id=st.result
+        raw_results =DB.fetch_all(f'''SELECT search, repository, sqliv, number_of_stars, size, number_of_contributors, st.file_relative_repo, st.location from result r
+                    LEFT JOIN sqliv st ON r.id=st.result
                     LEFT JOIN search s on s.id=r.search
                     LEFT JOIN language l on s.language=l.id
                     WHERE search IN ({','.join(['?']*len(self.__searchID))})
@@ -109,10 +109,10 @@ class Results:
             writer.writerow(['Start of no SQLIV by language in analyzed repos'])
             writer.writerows(count_no_sqliv_by_language)
             writer.writerow(['Start of repos with found SQLIV'])
-            writer.writerow(['Repo id', 'stars', 'followers', 'size', 'contributors', 'number of found SQLIV'])
+            writer.writerow(['Repo id', 'stars', 'size', 'contributors', 'number of found SQLIV'])
             writer.writerows(count_sqliv_in_repos)
             writer.writerow(['Start of raw results'])
-            writer.writerow(['Search id', 'Repo id', 'SQLIV', 'stars', 'followers', 'size', 'contributors', 'file', 'location'])
+            writer.writerow(['Search id', 'Repo id', 'SQLIV', 'stars', 'size', 'contributors', 'file', 'location'])
             writer.writerows(raw_results)
 
 
@@ -120,8 +120,8 @@ class Results:
         """Collect data from data base for result presentation"""
         DB = Database()
         DB.connect()
-        count_sqliv_in_repos = DB.fetch_all(f'''SELECT repository, number_of_stars, number_of_followers, size, number_of_contributors, COUNT(*) from result r
-                    LEFT JOIN sqliv_type st on r.id=st.result
+        count_sqliv_in_repos = DB.fetch_all(f'''SELECT repository, number_of_stars, size, number_of_contributors, COUNT(*) from result r
+                    LEFT JOIN sqliv st on r.id=st.result
                     LEFT JOIN search s on s.id=r.search
                     LEFT JOIN language l on s.language=l.id
                     WHERE search IN ({','.join(['?']*len(self.__searchID))})
