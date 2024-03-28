@@ -16,12 +16,22 @@ SKIP_DIRS = ['test', 'tests', 'Test', 'Tests'] #Skip directories for test files
 codeQLDB = 'codeQLDBmap'
 SQL_KEY_WORDS = [r'SELECT', r'UPDATE', r'INSERT', r'DELETE', r'CREATE', r'ALTER', r'DROP']
 keyWordString = r'('+r'|'.join(SQL_KEY_WORDS)+r')'
-concatPlusSign = r'((\"|\').*'+keyWordString+r'\b.*(\"|\')\s*\+\s*\w+)+'
+#Set up regex for concatenated strings
+concatPlusSign = r'((\"|\')\s*'+keyWordString+r'\b.*(\"|\')\s*\+\s*\w+)+'
 concatAppendJ = r'(append\s*\(\s*"'+keyWordString+r'\b.*"\s*\)\s*\.\s*append\s*\(\s*\w*\s*\))+'
 concatFormatJ = r'(String\s*\.\s*format\s*\(\s*"\s*'+keyWordString+r'\b.*%s.*"\s*,\s*\w+\s*\))+'
+regexConcatJava = [concatPlusSign,concatAppendJ,concatFormatJ]
 concatFormatP = r'(.*"\s*'+keyWordString+r'\b.*"\s*\.\s*format\s*\((\s*\w+\s*)(,\s*\w+\s*)*\))+'
 concatPercentP = r'((\'|\")\s*'+keyWordString+r'\b.*?(%s|%d).*?(\'|\")\s*%\s*\()+'
 concatFStringP = r'(f(\'|\")\s*SELECT\b.*?[{]\s*\w+\s*[}].*?(\'|\"))+'
+regexConcatPython = [concatPlusSign,concatFormatP,concatPercentP,concatFStringP]
+#Set up regex for prepared statements.
+preparedPythonD = r'((")\s*'+keyWordString+r'\b([^"])*?(%s|\?)([^"])*?(")+(?!\s*%\s*(\w+|\()))+'
+preparedPythonS = r'((\')\s*'+keyWordString+r'\b([^\'])*?(%s|\?)([^\'])*?(\')+(?!\s*%\s*(\w+|\()))+'
+preparedStatementP = [preparedPythonD, preparedPythonS]
+
+preparedJava = r'("\s*'+keyWordString+r'\b([^"])*?(:\w+\b|\?)([^"])*?("))+'
+preparedStatementJ = [preparedJava]
 
 def search(lang, path, repo, repoID, searchID):
     baseName = ntpath.basename(repo)[:-4]
@@ -110,17 +120,13 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
     regexSet = []
     extension = ''
     if lang == 'Python':
-        regexSet.append(concatPlusSign)
-        regexSet.append(concatFormatP)
-        regexSet.append(concatPercentP)
-        regexSet.append(concatFStringP)
+        regexSet = regexConcatPython
+        regexPrep = preparedStatementP
         extension = '*.py'
     elif lang == 'Java':
-        regexSet.append(concatPlusSign)
-        regexSet.append(concatAppendJ)
-        regexSet.append(concatFormatJ)
+        regexSet = regexConcatJava
+        regexPrep = preparedStatementJ
         extension = '*.java'
-    print(regexSet)
     resultDict = {
         'sqliv' : None,
         'type' : [],
@@ -141,13 +147,17 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                     for reg in regexSet:
                         for match in re.finditer(reg, text, re.IGNORECASE):
                             resultDict['sqliv'] = 1
-                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end()))
+                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'concat'))
+                    for reg in regexPrep:
+                        for match in re.finditer(reg, text, re.IGNORECASE):
+                            resultDict['sqliv'] = 1
+                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'prep'))
     if resultDict['sqliv'] is None:
         resultDict['sqliv'] = 0
     return resultDict
 
-def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int) -> list:
-    """Returns (filename, line_number, col_start, line:number, col_end) of `index` in `s`."""
+def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int, detectType : str) -> list:
+    """Returns (filename, line_number, col_start, line:number, col_end, detect type) of `index` in `s`."""
     
     if not len(s):
         return 1, 1
@@ -155,7 +165,7 @@ def __index_to_coordinates(file, s : str, indexStart : int, indexEnd : int) -> l
     line = len(sp)
     end = len(sp[-1])
     start = end - (indexEnd-indexStart)
-    return [file.name, line, start, line,  end]
+    return [file.name, line, start, line,  end, detectType]
 
 def __saveAnalysisResults(analysisResults, repoID, searchID):
     """Save the analysis result to database."""
@@ -174,7 +184,8 @@ def __saveAnalysisResults(analysisResults, repoID, searchID):
         for hit in analysisResults['type']:
             file = hit[0]
             location = f'{hit[1]},{hit[2]},{hit[3]},{hit[4]}'
-            DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location) VALUES (?,?,?)''', (lastRow, file, location))
+            hitType = hit[5]
+            DB.execute('''INSERT INTO sqliv_type(result, file_relative_repo, location, type) VALUES (?,?,?,?)''', (lastRow, file, location, hitType))
     DB.close()
 
 def __get_files(root: Path, extension : str, exclude = SKIP_DIRS):
