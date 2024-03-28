@@ -52,7 +52,7 @@ class Main:
         print('You will now be presented a number of options to define your search. The value inside the parentheses is the default. Press Enter to select the default value, otherwise input your preferred value and press Enter.')
 
         self.language = self.__validate_input(self.language, f'Language: ({self.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
-        self.computer = self.__validate_input(self.computer, f'Computer: ({self.computer}) ', lambda value: int(value) == 1 or int(value) == 2, 'Not a valid input.')
+        self.computer = int(self.__validate_input(self.computer, f'Computer: ({self.computer}) ', lambda value: int(value) == 1 or int(value) == 2, 'Not a valid input.'))
 
         # self.min_size = self.__validate_input(self.min_size, f'Minimum size: ({self.min_size}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
         # self.max_size = self.__validate_input(self.max_size, f'Maximum size: ', lambda value: int(value) > int(self.min_size), 'The value has to be a number and greater than the min value.')
