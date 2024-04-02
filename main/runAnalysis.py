@@ -1,18 +1,16 @@
-import csv
 import ntpath
 import os
 import re
 import shutil
 import stat
 import subprocess
-import sys
 from pathlib import Path
 
 from database.database import Database
 
-DBDriverJavaObjectFunction = ['Statement', 'ResultSet', 'PreparedStatement', 'TypedQuery'] # TODO https://survey.stackoverflow.co/2023/#section-most-popular-technologies-databases
-DBDriverPythonImports = ['pymssql', 'asyncpg', 'pyodbc', 'sqlite3', 'mysql.connector', 'psycopg', 'psycopg2', 'pymysql', 'mysqlclient']
-SKIP_DIRS = ['test', 'tests', 'Test', 'Tests'] #Skip directories for test files
+DBDriverJavaObjectFunction = ['CallableStatement', 'PreparedStatement', 'ResultSet', 'Statement', 'createStatement', 'executeUpdate', 'prepareCall', 'prepareStatement']
+DBDriverPythonImports = ['mariadb', 'mysql.connector', 'oracledb', 'psycopg', 'psycopg2', 'psycopg3', 'pyodbc', 'pymssql', 'sqlite3']
+SKIP_DIRS = ['test', 'tests', 'Test', 'Tests'] # Skip directories containing test files.
 codeQLDB = 'codeQLDBmap'
 SQL_KEY_WORDS = [r'SELECT', r'UPDATE', r'INSERT', r'DELETE', r'CREATE', r'ALTER', r'DROP']
 keyWordString = r'('+r'|'.join(SQL_KEY_WORDS)+r')'
@@ -100,7 +98,6 @@ def __createSearchRegexJava() -> str:
 
     classNames = r'('+r'|'.join(DBDriverJavaObjectFunction)+r')'
     regex = r'^(?=.*\b('+classNames+r')\b).*$'
-    print(regex)
     return regex
 
 
