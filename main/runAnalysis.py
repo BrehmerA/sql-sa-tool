@@ -98,7 +98,6 @@ def __createSearchRegexJava() -> str:
 
     classNames = r'('+r'|'.join(DBDriverJavaObjectFunction)+r')'
     regex = r'^(?=.*\b('+classNames+r')\b).*$'
-    print(regex)
     return regex
 
 
