@@ -18,6 +18,18 @@ class Main:
 
     search_ids = []
 
+    Search_java = {
+        'stars' : (6,11,36),
+        'size' : ((300,410,2000,10000,15000,100000,300000,700000,-1),(500,1000,5000,10000,50000,100000,-1),(500,5000,50000,100000,-1)),
+        'steps' : ((0,5,10,50,250,500,10000,50000,-1),(10,50,100,1000,5000,10000,-1),(50,500,5000,50000,-1)),
+    }
+
+    Search_python = {
+        'stars' : (6,11,21,66),
+        'size' : ((300,400,2000,10000,15000,100000,300000,700000,1000000,-1),(200,500,1000,5000,10000,50000,100000,500000,1000000,-1),(200,500,1000,5000,10000,50000,100000,500000,1000000,-1),(500,5000,50000,500000,-1)),
+        'steps' : ((0,5,10,50,250,500,10000,50000,300000,-1),(5,10,50,100,500,1000,10000,50000,500000,-1),(10,50,100,500,1000,5000,25000,150000,500000,-1),(50,500,5000,50000,-1))
+    }
+
 
     def __select_action(self):
         print('What do you wish to do?\n1. Perform a new search\n2. Present the results from a previous search')
@@ -52,7 +64,7 @@ class Main:
         print('You will now be presented a number of options to define your search. The value inside the parentheses is the default. Press Enter to select the default value, otherwise input your preferred value and press Enter.')
 
         self.language = self.__validate_input(self.language, f'Language: ({self.language}) ', lambda value: value == 'Java' or value == 'Python', 'Not a valid input.')
-        self.computer = int(self.__validate_input(self.computer, f'Computer: ({self.computer}) ', lambda value: int(value) == 1 or int(value) == 2, 'Not a valid input.'))
+        self.computer = int(self.__validate_input(self.computer, f'Computer: ({self.computer}) ', lambda value: int(value) == 1 or int(value) == 2 or int(value) == 3, 'Not a valid input.'))
 
         # self.min_size = self.__validate_input(self.min_size, f'Minimum size: ({self.min_size}) ', lambda value: int(value) >= 0, 'The value has to be a number and equal to or greater than 0.')
         # self.max_size = self.__validate_input(self.max_size, f'Maximum size: ', lambda value: int(value) > int(self.min_size), 'The value has to be a number and greater than the min value.')
@@ -109,6 +121,51 @@ class Main:
 
         db.close()
 
+    def __search_low_stars(self):
+        """Method to defined fined grained search with size criteria"""
+        
+        search_ranges = self.Search_java if self.language == 'Java' else self.Search_python
+        list = 0
+        for stars in search_ranges['stars']:
+            start_stars = self.min_number_of_stars if list==0 else search_ranges['stars'][list-1]
+            print('Start star : End star ', start_stars , ' : ', search_ranges['stars'][list])
+            for i in range(start_stars, stars):
+                self.min_size = 100
+                self.max_size = self.min_size + search_ranges['steps'][list][0]
+                for j in range(0,len(search_ranges['size'][list])):
+                    print(search_ranges['size'][list])
+                    print(search_ranges['steps'][list])
+                    if search_ranges['steps'][list][j] == -1:
+                        self.max_size = None
+                        print(self.min_size)
+                        print(self.max_size)
+                        search_id = Search(
+                        self.language,
+                        self.min_size, self.max_size, # + 1,
+                        None, None, i,
+                        self.min_number_of_contributors, self.max_number_of_contributors,
+                        ).run()
+                        Analysis().start_filter(search_id)
+                    else:
+                        while True:
+                            print(self.min_size)
+                            print(self.max_size)
+                            search_id = Search(
+                            self.language,
+                            self.min_size, self.max_size, # + 1,
+                            None, None, i,
+                            self.min_number_of_contributors, self.max_number_of_contributors,
+                            ).run()
+                            Analysis().start_filter(search_id)
+                            input('Press any key')
+                            if self.max_size >= search_ranges['size'][list][j]:
+                                self.min_size = self.max_size + 1
+                                self.max_size = self.min_size + search_ranges['steps'][list][j+1]
+                                break
+                            else:
+                                self.min_size = self.max_size + 1
+                                self.max_size = self.min_size + search_ranges['steps'][list][j]
+            list += 1
 
     def run(self):
         """Main method for executing the program."""
@@ -118,6 +175,7 @@ class Main:
             self.__define_search()
             self.max_number_of_stars = 4000 if self.language == 'Java' else 6000
             if self.computer == 1:
+                self.min_number_of_stars = 36 if self.language == 'Java' else 66
                 for i in range(self.min_number_of_stars, 501):
                     search_id = Search(
                         self.language,
@@ -127,6 +185,8 @@ class Main:
                     ).run()
                     # 498 searches
                     Analysis().start_filter(search_id)
+            elif self.computer == 3:
+                self.__search_low_stars()
             else:
                 for i in range(501, 1001):
                     search_id = Search(
