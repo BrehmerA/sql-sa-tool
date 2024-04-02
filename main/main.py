@@ -157,7 +157,6 @@ class Main:
                             self.min_number_of_contributors, self.max_number_of_contributors,
                             ).run()
                             Analysis().start_filter(search_id)
-                            input('Press any key')
                             if self.max_size >= search_ranges['size'][list][j]:
                                 self.min_size = self.max_size + 1
                                 self.max_size = self.min_size + search_ranges['steps'][list][j+1]
