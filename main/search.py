@@ -169,6 +169,9 @@ class Search:
                 try:
                     message = content['message']
                     print(message)
+                    for i in range(0,240):
+                        print('Waiting for rate limit cool down: ',204-i,'s')
+                        sleep(1)
                 except:
                     number_of_contributors = len(content) # TODO Not the actual number.
                     if number_of_contributors >= int(self.min_number_of_contributors) and (self.max_number_of_contributors is None or number_of_contributors <= int(self.max_number_of_contributors)):
