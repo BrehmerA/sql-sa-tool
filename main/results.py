@@ -153,7 +153,13 @@ class Results:
             writer.writerows(results[6])
             writer.writerow(['Start of raw results'])
             writer.writerow(['Search id', 'Repo id', 'SQLIV', 'stars', 'size', 'contributors', 'file', 'location'])
-            writer.writerows(raw_results)
+            for i in range(0,len(raw_results)):
+                try:
+                    writer.writerow(raw_results[i])
+                except UnicodeEncodeError:
+                    raw_results[i][6] = 'Encoding error'
+                    writer.writerow(raw_results[i])
+
 
 
     def __get_raw_results(self):
