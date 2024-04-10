@@ -108,11 +108,14 @@ class Main:
             print(string)
         while len(self.search_ids) == 0:
             try:
-                ids = input('Please enter the IDs of the searches you want to be presented (use a single space as a separator): ').split(' ')
-                for id in ids:
-                    if int(id) not in search_id_list:
-                        raise Exception
-                self.search_ids = ids
+                ids = input('Please enter the IDs of the searches you want to be presented. Leave empty to select all (use a single space as a separator): ').split(' ')
+                if ids == ['']:
+                    self.search_ids = tuple(search_id_list)
+                else:
+                    for id in ids:
+                        if int(id) not in search_id_list:
+                            raise Exception
+                    self.search_ids = ids
             except KeyboardInterrupt:
                 exit()
             except:
