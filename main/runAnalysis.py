@@ -4,6 +4,8 @@ import re
 import shutil
 import stat
 import subprocess
+import time
+import regex
 from pathlib import Path
 
 from database.database import Database
@@ -21,7 +23,7 @@ concatFormatJ = r'(String\s*\.\s*format\s*\(\s*"\s*'+keyWordString+r'\b.*%s.*"\s
 regexConcatJava = [concatPlusSign,concatAppendJ,concatFormatJ]
 concatFormatP = r'(.*"\s*'+keyWordString+r'\b.*"\s*\.\s*format\s*\((\s*\w+\s*)(,\s*\w+\s*)*\))+'
 concatPercentP = r'((\'|\")\s*'+keyWordString+r'\b.*?(%s|%d).*?(\'|\")\s*%\s*\()+'
-concatFStringP = r'(f(\'|\")\s*SELECT\b.*?[{]\s*\w+\s*[}].*?(\'|\"))+'
+concatFStringP = r'(f(\'|\")\s*'+keyWordString+r'\b.*?[{]\s*\w+\s*[}].*?(\'|\"))+'
 regexConcatPython = [concatPlusSign,concatFormatP,concatPercentP,concatFStringP]
 #Set up regex for prepared statements.
 preparedPythonD = r'((")\s*'+keyWordString+r'\b([^"])*?(%s|\?)([^"])*?(")+(?!\s*%\s*(\w+|\()))+'
@@ -30,6 +32,8 @@ preparedStatementP = [preparedPythonD, preparedPythonS]
 
 preparedJava = r'("\s*'+keyWordString+r'\b([^":])*?((?<!:):(?!:)\w+\b|\?)([^"])*?("))+'
 preparedStatementJ = [preparedJava]
+
+time_out_scan = 60
 
 
 def search(lang, path, repo, repoID, searchID):
@@ -141,13 +145,19 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                 with f as fp:
                     text = fp.read()
                     for reg in regexSet:
-                        for match in re.finditer(reg, text, re.IGNORECASE):
-                            resultDict['sqliv'] = 1
-                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'concat'))
+                        try:
+                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=time_out_scan):
+                                resultDict['sqliv'] = 1
+                                resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'concat'))
+                        except:
+                            print('Analysis timed out')
                     for reg in regexPrep:
-                        for match in re.finditer(reg, text, re.IGNORECASE):
-                            resultDict['sqliv'] = 1
-                            resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'prep'))
+                        try:
+                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=time_out_scan):
+                                resultDict['sqliv'] = 1
+                                resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'prep'))
+                        except:
+                            print('Analysis timed out')
     if resultDict['sqliv'] is None:
         resultDict['sqliv'] = 0
     return resultDict
