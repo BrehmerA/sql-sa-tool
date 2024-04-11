@@ -131,7 +131,7 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
         'sqliv' : None,
         'type' : [],
     }
-    for file in list(Path("D:\dt002g\main\web-crawler").rglob(extension)):
+    for file in list(cloneInto.rglob(extension)):
         if set(file.parts).isdisjoint(SKIP_DIRS):
             try:
                 f=open(file, errors='ignore')
