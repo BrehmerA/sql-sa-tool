@@ -33,7 +33,7 @@ preparedStatementP = [preparedPythonD, preparedPythonS]
 preparedJava = r'("\s*'+keyWordString+r'\b([^":])*?((?<!:):(?!:)\w+\b|\?)([^"])*?("))+'
 preparedStatementJ = [preparedJava]
 
-time_out_scan = 300
+time_out_scan = 60
 
 
 def search(lang, path, repo, repoID, searchID):
@@ -146,14 +146,14 @@ def __performSQLIVAnalysis(cloneInto: Path, lang: str) -> dict:
                     text = fp.read()
                     for reg in regexSet:
                         try:
-                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=10):
+                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=time_out_scan):
                                 resultDict['sqliv'] = 1
                                 resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'concat'))
                         except:
                             print('Analysis timed out')
                     for reg in regexPrep:
                         try:
-                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=10):
+                            for match in regex.finditer(reg, text, re.IGNORECASE, timeout=time_out_scan):
                                 resultDict['sqliv'] = 1
                                 resultDict['type'].append(__index_to_coordinates(fp, text, match.start(), match.end(), 'prep'))
                         except:
