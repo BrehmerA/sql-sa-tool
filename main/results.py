@@ -10,6 +10,7 @@ import numpy as np
 from scipy.stats import ttest_ind
 from scipy.stats import tukey_hsd
 import statsmodels.api as sm
+import matplotlib.ticker as mticker
 from database.database import Database
 
 
@@ -42,6 +43,7 @@ class Results:
         count_analyzed_repos = count_repos_with_no_sqliv + repos_with_sqliv
         print('------Results From Analysis-----')
         self.__print_basics(count_sqliv_in_repos, count_repos_with_no_sqliv,count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language,count_analyzed_repos,sqliv_type_results_java,sqliv_type_results_python)
+        print('\n------Statistics and CDF plots------\n')
         self.__do_stats('size',sqliv_category_res_python[2],sqliv_category_res_python[3],sqliv_category_res_java[2],sqliv_category_res_java[3])
         self.__do_stats('contributors',sqliv_category_res_python[4],sqliv_category_res_python[5],sqliv_category_res_java[4],sqliv_category_res_java[5])
         self.__do_stats('date',sqliv_category_res_python[6],sqliv_category_res_python[7],sqliv_category_res_java[6],sqliv_category_res_java[7])
@@ -52,7 +54,7 @@ class Results:
 
     def __print_basics(self, count_sqliv_in_repos, count_repos_with_no_sqliv, count_searched_repos, count_sqliv_by_language, count_no_sqliv_by_language, count_analyzed_repos, sqliv_type_results_java, sqliv_type_results_python):
         """Print result"""
-        print(f'{"Searches included in result compilation:":<40}', self.__searchID)
+        print(f'{"Searches included in result compilation:":<40}', self.__searchID,'\n')
         print(f'{"Total number of repos in search:":<40}', count_searched_repos)
         print(f'{"Total number of analyzed repos:":<40}', count_analyzed_repos)
         if count_analyzed_repos > 0:
@@ -71,10 +73,9 @@ class Results:
         print(f'{sqliv_type_results_python["concat"]}{" repos with concatenation only."}')
         print(f'{sqliv_type_results_python["prep"]}{" repos with prepared statements only."}')
         print('')
-        print(count_no_sqliv_by_language)
-        print('')
         for res in count_no_sqliv_by_language:
             print(f'{res[0]}{" repos without concatenated and/or prepared statements":<40}', res[1])
+        print('')
 
     def __get_variable_plot_data(self, sqliv_type_results):
         """Split results for category scatter plots"""
@@ -183,9 +184,10 @@ class Results:
             if len(Category_J['prepared and concatenation']) > 0 and len(Category_P['prepared and concatenation']) > 0: 
                 print('T-test for prepared and concatenation: ', ttest_ind(Category_J['prepared and concatenation'], Category_P['prepared and concatenation']))
         else:
-            print('Only one language in results. No comparison statistics between languages calculated')
+            print('Only one language in results. No comparison statistics between languages calculated\n')
         
         print(f'Tukey HSD for {metric}')
+        print('0 = hard coded, 1 = prepared and concatenation, 3 = concat, 4 = prep')
         java_args = []
         python_args = []
         for k,v in Category_J.items():
@@ -200,13 +202,14 @@ class Results:
             print('tuckey for java projects:\n', tj)
             print('exact p-values java\n',getattr(tj,'pvalue'))
         else:
-            print('No sql categories to compare in java projects')
+            print('No sql categories to compare in java projects\n')
         if len(python_args) > 1:
             tp = tukey_hsd(*python_args)
             print('tuckey for python projects:\n', tp)
             print('exact p-values python\n',getattr(tp,'pvalue'))
         else:
-            print('No sql categories to compare in python projects')
+            print('No sql categories to compare in python projects\n')
+        print('')
 
         f, ax = plt.subplots()
         countj, bins_countj = np.histogram(Category_J['hard coded']+Category_J['prepared and concatenation']+Category_J['concat']+Category_J['prep'], bins=75)
@@ -223,6 +226,8 @@ class Results:
             new_labels = []
             for item in ax.get_xticks():
                 new_labels.append(date.fromordinal(int(item)))
+            ticks_loc = ax.get_xticks().tolist()
+            ax.xaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
             ax.set(xticklabels=new_labels)
             ax.set_xlabel('Latest update')
             plt.title(f'Cumulative distribution for latest update', fontsize=20)
@@ -261,6 +266,8 @@ class Results:
                 new_labels = []
                 for item in ax.get_yticks():
                     new_labels.append(date.fromordinal(int(item)))
+                ticks_loc = ax.get_yticks().tolist()
+                ax.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
                 ax.set(yticklabels=new_labels)
             plt.show()
 
@@ -312,8 +319,9 @@ class Results:
                 try:
                     writer.writerow(raw_results[i])
                 except UnicodeEncodeError:
-                    raw_results[i][6] = 'Encoding error'
-                    writer.writerow(raw_results[i])
+                    failed_line = list(raw_results[i])
+                    failed_line[6] = 'Encoding error'
+                    writer.writerow(failed_line)
 
 
 
