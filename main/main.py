@@ -133,40 +133,40 @@ class Main:
             start_stars = self.min_number_of_stars if list==0 else search_ranges['stars'][list-1]
             print('Start star : End star ', start_stars , ' : ', search_ranges['stars'][list])
             for i in range(start_stars, stars):
-                self.min_size = 100
-                self.max_size = self.min_size + search_ranges['steps'][list][0]
+                curr_min_size = self.min_size
+                self.max_size = curr_min_size + search_ranges['steps'][list][0]
                 for j in range(0,len(search_ranges['size'][list])):
                     print(search_ranges['size'][list])
                     print(search_ranges['steps'][list])
                     if search_ranges['steps'][list][j] == -1:
                         self.max_size = None
-                        print(self.min_size)
+                        print(curr_min_size)
                         print(self.max_size)
                         search_id = Search(
                         self.language,
-                        self.min_size, self.max_size, # + 1,
+                        curr_min_size, self.max_size, # + 1,
                         None, None, i,
                         self.min_number_of_contributors, self.max_number_of_contributors,
                         ).run()
                         Analysis().start_filter(search_id)
                     else:
                         while True:
-                            print(self.min_size)
+                            print(curr_min_size)
                             print(self.max_size)
                             search_id = Search(
                             self.language,
-                            self.min_size, self.max_size, # + 1,
+                            curr_min_size, self.max_size, # + 1,
                             None, None, i,
                             self.min_number_of_contributors, self.max_number_of_contributors,
                             ).run()
                             Analysis().start_filter(search_id)
                             if self.max_size >= search_ranges['size'][list][j]:
-                                self.min_size = self.max_size + 1
-                                self.max_size = self.min_size + search_ranges['steps'][list][j+1]
+                                curr_min_size = self.max_size + 1
+                                self.max_size = curr_min_size + search_ranges['steps'][list][j+1]
                                 break
                             else:
-                                self.min_size = self.max_size + 1
-                                self.max_size = self.min_size + search_ranges['steps'][list][j]
+                                curr_min_size = self.max_size + 1
+                                self.max_size = curr_min_size + search_ranges['steps'][list][j]
             list += 1
 
     def run(self):
